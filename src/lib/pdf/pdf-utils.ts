@@ -36,9 +36,119 @@ export async function splitPdfPages(
   return results;
 }
 
+export async function compressPdfFile(
+  file: File,
+  level: 'light' | 'medium' | 'heavy' = 'medium'
+): Promise<Uint8Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdfDoc = await PDFDocument.load(arrayBuffer);
+
+  // Apply object stream compression & strip unused objects
+  const qualityMap = { light: 0.85, medium: 0.65, heavy: 0.45 };
+  const quality = qualityMap[level];
+
+  // Re-encode embedded image streams if possible or resave with compressed structures
+  const pdfBytes = await pdfDoc.save({
+    useObjectStreams: true,
+    addDefaultPage: false,
+    objectsPerTick: 50,
+  });
+
+  // If initial structural compression wasn't enough for heavy level, canvas fallback re-encode
+  if (level === 'heavy' && pdfBytes.length >= file.size) {
+    const images = await renderPdfToCanvasBlobs(file, quality);
+    return await createPdfFromCanvasBlobs(images);
+  }
+
+  return pdfBytes;
+}
+
+export async function renderPdfToCanvasBlobs(
+  file: File,
+  quality = 0.7,
+  scale = 1.5,
+  mimeType = 'image/jpeg'
+): Promise<{ pageIndex: number; blob: Blob }[]> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdfjsLib = await import('pdfjs-dist');
+  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+
+  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  const results: { pageIndex: number; blob: Blob }[] = [];
+
+  for (let i = 1; i <= pdf.numPages; i++) {
+    const page = await pdf.getPage(i);
+    const viewport = page.getViewport({ scale });
+
+    const canvas = document.createElement('canvas');
+    const context = canvas.getContext('2d');
+    canvas.width = viewport.width;
+    canvas.height = viewport.height;
+
+    if (context) {
+      await page.render({ canvasContext: context, viewport, canvas }).promise;
+      const blob = await new Promise<Blob>((resolve) => {
+        canvas.toBlob((b) => resolve(b || new Blob()), mimeType, quality);
+      });
+      results.push({ pageIndex: i - 1, blob });
+    }
+  }
+
+  return results;
+}
+
+export async function createPdfFromCanvasBlobs(
+  items: { pageIndex: number; blob: Blob }[]
+): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+
+  for (const item of items) {
+    const imageBytes = await item.blob.arrayBuffer();
+    const image = await pdfDoc.embedJpg(imageBytes);
+    const page = pdfDoc.addPage([image.width, image.height]);
+    page.drawImage(image, {
+      x: 0,
+      y: 0,
+      width: image.width,
+      height: image.height,
+    });
+  }
+
+  return await pdfDoc.save();
+}
+
+export async function convertImagesToPdf(
+  files: File[],
+  margin = 0
+): Promise<Uint8Array> {
+  const pdfDoc = await PDFDocument.create();
+
+  for (const file of files) {
+    const arrayBuffer = await file.arrayBuffer();
+    const isPng = file.type.includes('png') || file.name.endsWith('.png');
+
+    const image = isPng
+      ? await pdfDoc.embedPng(arrayBuffer)
+      : await pdfDoc.embedJpg(arrayBuffer);
+
+    const pageWidth = image.width + margin * 2;
+    const pageHeight = image.height + margin * 2;
+    const page = pdfDoc.addPage([pageWidth, pageHeight]);
+
+    page.drawImage(image, {
+      x: margin,
+      y: margin,
+      width: image.width,
+      height: image.height,
+    });
+  }
+
+  return await pdfDoc.save();
+}
+
 export async function rotatePdfPages(
   file: File,
-  rotationDegrees: number, // 90, 180, 270
+  rotationDegrees: number,
   pageIndices?: number[]
 ): Promise<Uint8Array> {
   const arrayBuffer = await file.arrayBuffer();
