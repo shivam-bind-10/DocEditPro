@@ -231,6 +231,58 @@ export async function addPageNumbersToPdf(
   return await pdfDoc.save();
 }
 
+export async function cropAndResizePdf(
+  file: File,
+  options: {
+    preset?: 'a4' | 'letter' | 'a3' | 'custom';
+    customWidth?: number; // in points
+    customHeight?: number; // in points
+    cropTop?: number;
+    cropRight?: number;
+    cropBottom?: number;
+    cropLeft?: number;
+  }
+): Promise<Uint8Array> {
+  const arrayBuffer = await file.arrayBuffer();
+  const pdfDoc = await PDFDocument.load(arrayBuffer);
+  const pages = pdfDoc.getPages();
+
+  const PRESETS: Record<string, [number, number]> = {
+    a4: [595.28, 841.89],
+    letter: [612, 792],
+    a3: [841.89, 1190.55],
+  };
+
+  for (const page of pages) {
+    const { width, height } = page.getSize();
+
+    // Apply crop margins first (modifies MediaBox)
+    const cropTop = options.cropTop ?? 0;
+    const cropRight = options.cropRight ?? 0;
+    const cropBottom = options.cropBottom ?? 0;
+    const cropLeft = options.cropLeft ?? 0;
+
+    if (cropTop || cropRight || cropBottom || cropLeft) {
+      page.setCropBox(
+        cropLeft,
+        cropBottom,
+        width - cropLeft - cropRight,
+        height - cropTop - cropBottom
+      );
+    }
+
+    // Apply resize if a preset or custom size is specified
+    if (options.preset && options.preset !== 'custom') {
+      const [newW, newH] = PRESETS[options.preset];
+      page.setSize(newW, newH);
+    } else if (options.preset === 'custom' && options.customWidth && options.customHeight) {
+      page.setSize(options.customWidth, options.customHeight);
+    }
+  }
+
+  return await pdfDoc.save();
+}
+
 export async function extractTextFromPdf(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
   const pdfjsLib = await import('pdfjs-dist');
