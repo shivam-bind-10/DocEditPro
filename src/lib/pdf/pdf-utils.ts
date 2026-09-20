@@ -70,8 +70,12 @@ export async function renderPdfToCanvasBlobs(
   mimeType = 'image/jpeg'
 ): Promise<{ pageIndex: number; blob: Blob }[]> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdfjsLib = await import('pdfjs-dist');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  const pdfjsLib = typeof window !== 'undefined'
+    ? await import('pdfjs-dist')
+    : await import('pdfjs-dist/legacy/build/pdf.mjs');
+  if (typeof window !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  }
 
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const results: { pageIndex: number; blob: Blob }[] = [];
@@ -529,10 +533,18 @@ export async function cropAndResizePdf(
 
 export async function extractTextFromPdf(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdfjsLib = await import('pdfjs-dist');
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  const pdfjsLib = typeof window !== 'undefined'
+    ? await import('pdfjs-dist')
+    : await import('pdfjs-dist/legacy/build/pdf.mjs');
+  if (typeof window !== 'undefined') {
+    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  }
 
-  const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const pdf = await pdfjsLib.getDocument({
+    data: arrayBuffer,
+    useSystemFonts: true,
+  } as any).promise;
   let fullText = '';
 
   for (let i = 1; i <= pdf.numPages; i++) {
