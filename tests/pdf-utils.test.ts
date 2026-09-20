@@ -5,6 +5,10 @@ import {
   splitPdfPages,
   compressPdfFile,
   convertImagesToPdf,
+  addWatermarkToPdf,
+  addPageNumbersToPdf,
+  addHeadersAndFootersToPdf,
+  parsePageRange,
 } from '../src/lib/pdf/pdf-utils';
 
 async function createSamplePdf(pageCount = 1): Promise<File> {
@@ -32,6 +36,12 @@ function createSampleImageFile(filename = 'test.png'): File {
 }
 
 describe('PDF Utilities Unit Tests', () => {
+  it('should parse page ranges accurately', () => {
+    expect(parsePageRange('all', 5)).toEqual([0, 1, 2, 3, 4]);
+    expect(parsePageRange('1-3, 5', 5)).toEqual([0, 1, 2, 4]);
+    expect(parsePageRange('2', 5)).toEqual([1]);
+  });
+
   it('should merge two PDF files into one document', async () => {
     const file1 = await createSamplePdf(2);
     const file2 = await createSamplePdf(3);
@@ -77,6 +87,48 @@ describe('PDF Utilities Unit Tests', () => {
     const pdfBytes = await convertImagesToPdf([img1, img2], 10);
     const doc = await PDFDocument.load(pdfBytes);
 
+    expect(doc.getPageCount()).toBe(2);
+  });
+
+  it('should apply text and image watermarks to a PDF', async () => {
+    const file = await createSamplePdf(2);
+    const watermarkedBytes = await addWatermarkToPdf(file, {
+      type: 'text',
+      text: 'DRAFT',
+      opacity: 0.5,
+      position: 'center',
+    });
+    const doc = await PDFDocument.load(watermarkedBytes);
+    expect(doc.getPageCount()).toBe(2);
+
+    const img = createSampleImageFile('mark.png');
+    const imgWatermarkBytes = await addWatermarkToPdf(file, {
+      type: 'image',
+      imageFile: img,
+      opacity: 0.4,
+    });
+    const docImg = await PDFDocument.load(imgWatermarkBytes);
+    expect(docImg.getPageCount()).toBe(2);
+  });
+
+  it('should add page numbers to a PDF file', async () => {
+    const file = await createSamplePdf(3);
+    const numberedBytes = await addPageNumbersToPdf(file, {
+      format: 'page_n_of_m',
+      position: 'bottom-center',
+      startNumber: 1,
+    });
+    const doc = await PDFDocument.load(numberedBytes);
+    expect(doc.getPageCount()).toBe(3);
+  });
+
+  it('should add headers and footers with dynamic tokens', async () => {
+    const file = await createSamplePdf(2);
+    const outputBytes = await addHeadersAndFootersToPdf(file, {
+      headerLeft: 'Header L',
+      footerCenter: 'Page {page} of {total}',
+    });
+    const doc = await PDFDocument.load(outputBytes);
     expect(doc.getPageCount()).toBe(2);
   });
 });
