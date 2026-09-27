@@ -87,9 +87,9 @@ export const TOOLS: Tool[] = [
   // ✏️ Edit & Organize
   {
     id: 'edit-pdf-text',
-    name: 'Edit PDF Text',
+    name: 'PDF Editor',
     slug: 'edit-pdf-text',
-    description: 'Add text boxes, draw signatures, insert images, and make direct edits.',
+    description: 'Open real PDFs to edit text, change & add pictures, draw, sign, and add or duplicate pages.',
     category: 'edit-organize',
     icon: 'PenTool',
     popular: true,

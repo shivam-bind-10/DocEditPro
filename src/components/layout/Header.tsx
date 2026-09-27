@@ -2,13 +2,15 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Search, Shield, Command } from "lucide-react";
+import { Search, Shield, Command, Edit3, Clock } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CommandPalette } from "@/components/shared/CommandPalette";
+import { RecentFilesModal } from "@/components/shared/RecentFilesModal";
 
 export function Header() {
   const [isCommandOpen, setIsCommandOpen] = React.useState(false);
+  const [isRecentOpen, setIsRecentOpen] = React.useState(false);
 
   React.useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -35,7 +37,7 @@ export function Header() {
                 DocEditPro
               </span>
             </Link>
-            <Badge variant="accent" className="hidden md:inline-flex gap-1 py-0.5">
+            <Badge variant="accent" className="hidden lg:inline-flex gap-1 py-0.5">
               <Shield className="h-3 w-3" />
               100% Client-Side
             </Badge>
@@ -45,7 +47,7 @@ export function Header() {
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setIsCommandOpen(true)}
-              className="flex h-9 w-48 sm:w-64 items-center justify-between rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 text-xs text-[var(--muted-foreground)] hover:border-[var(--border-hover)] hover:bg-[var(--surface-hover)] transition-all cursor-pointer"
+              className="flex h-9 w-40 sm:w-56 md:w-64 items-center justify-between rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 text-xs text-[var(--muted-foreground)] hover:border-[var(--border-hover)] hover:bg-[var(--surface-hover)] transition-all cursor-pointer"
             >
               <span className="flex items-center space-x-2 truncate">
                 <Search className="h-3.5 w-3.5" />
@@ -57,15 +59,24 @@ export function Header() {
               </kbd>
             </button>
 
-            <nav className="hidden md:flex items-center space-x-1">
-              <Link href="/#all-tools">
-                <Button variant="ghost" size="sm">
-                  All Tools
+            <nav className="flex items-center space-x-1">
+              <Link href="/edit-pdf-text">
+                <Button variant="secondary" size="sm" className="bg-[var(--accent)]/15 border-[var(--accent)]/30 text-[var(--accent)] hover:bg-[var(--accent)]/25 flex items-center space-x-1.5 font-medium">
+                  <Edit3 className="h-3.5 w-3.5" />
+                  <span>PDF Editor</span>
                 </Button>
               </Link>
-              <Link href="/#privacy">
+              <button
+                onClick={() => setIsRecentOpen(true)}
+                title="Recent Files & History"
+                className="hidden sm:flex items-center space-x-1 px-2.5 py-1.5 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] rounded-[var(--radius-sm)] transition-colors"
+              >
+                <Clock className="h-3.5 w-3.5" />
+                <span className="hidden md:inline">Recents</span>
+              </button>
+              <Link href="/#all-tools" className="hidden md:inline-block">
                 <Button variant="ghost" size="sm">
-                  Privacy
+                  All Tools
                 </Button>
               </Link>
             </nav>
@@ -76,6 +87,11 @@ export function Header() {
       <CommandPalette
         isOpen={isCommandOpen}
         onClose={() => setIsCommandOpen(false)}
+      />
+
+      <RecentFilesModal
+        isOpen={isRecentOpen}
+        onClose={() => setIsRecentOpen(false)}
       />
     </>
   );
