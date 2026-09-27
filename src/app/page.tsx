@@ -48,8 +48,23 @@ export default function HomePage() {
               No file ever leaves your computer — no server processing, no sign-up, no limits.
             </p>
 
+            {/* Hero CTAs */}
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
+              <a href="/pdf-editor">
+                <Button variant="primary" size="lg" className="h-11 px-6 font-semibold flex items-center space-x-2 shadow-lg shadow-blue-500/20">
+                  <Sparkles className="h-4 w-4" />
+                  <span>Launch PDF Editor</span>
+                </Button>
+              </a>
+              <a href="#all-tools">
+                <Button variant="secondary" size="lg" className="h-11 px-6 font-medium">
+                  Browse All 44 Tools
+                </Button>
+              </a>
+            </div>
+
             {/* Quick Search */}
-            <div className="mx-auto max-w-xl pt-4">
+            <div className="mx-auto max-w-xl pt-2">
               <div className="relative">
                 <Search className="absolute left-4 top-3.5 h-5 w-5 text-[var(--muted-foreground)]" />
                 <Input
@@ -59,6 +74,26 @@ export default function HomePage() {
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="h-12 pl-12 pr-4 text-base bg-[var(--surface)] border-[var(--border)] hover:border-[var(--border-hover)] focus:border-[var(--accent)]"
                 />
+              </div>
+
+              {/* Quick Pills */}
+              <div className="flex flex-wrap items-center justify-center gap-1.5 pt-3 text-xs">
+                <span className="text-[var(--subtle-foreground)] mr-1">Popular:</span>
+                <a href="/pdf-editor" className="px-2.5 py-1 rounded-full bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--foreground)] hover:border-[var(--accent)] transition-colors">
+                  ✏️ PDF Editor
+                </a>
+                <a href="/merge-pdf" className="px-2.5 py-1 rounded-full bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors">
+                  🔀 Merge PDF
+                </a>
+                <a href="/compress-pdf" className="px-2.5 py-1 rounded-full bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors">
+                  📉 Compress PDF
+                </a>
+                <a href="/word-to-pdf" className="px-2.5 py-1 rounded-full bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors">
+                  📄 Word to PDF
+                </a>
+                <a href="/ocr-pdf" className="px-2.5 py-1 rounded-full bg-[var(--surface-elevated)] border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors">
+                  🔍 OCR Scan
+                </a>
               </div>
             </div>
 
