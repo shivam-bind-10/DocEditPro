@@ -102,3 +102,9 @@ export async function getSavedSignatures(): Promise<SavedSignature[]> {
   if (!db) return [];
   return db.getAllFromIndex('signatures', 'by-created');
 }
+
+export async function deleteSignature(id: string): Promise<void> {
+  const db = await getDB();
+  if (!db) return;
+  await db.delete('signatures', id);
+}
