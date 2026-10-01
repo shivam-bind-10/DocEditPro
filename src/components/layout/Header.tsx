@@ -47,6 +47,8 @@ export function Header() {
           <div className="flex items-center space-x-3">
             <button
               onClick={() => setIsCommandOpen(true)}
+              aria-label="Open command palette to search tools (Ctrl+K)"
+              aria-haspopup="dialog"
               className="flex h-9 w-40 sm:w-56 md:w-64 items-center justify-between rounded-[var(--radius-md)] border border-[var(--border)] bg-[var(--surface)] px-3 text-xs text-[var(--muted-foreground)] hover:border-[var(--border-hover)] hover:bg-[var(--surface-hover)] transition-all cursor-pointer"
             >
               <span className="flex items-center space-x-2 truncate">
@@ -69,6 +71,8 @@ export function Header() {
               <button
                 onClick={() => setIsRecentOpen(true)}
                 title="Recent Files & History"
+                aria-label="Open recent files history panel"
+                aria-haspopup="dialog"
                 className="hidden sm:flex items-center space-x-1 px-2.5 py-1.5 text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--surface-hover)] rounded-[var(--radius-sm)] transition-colors"
               >
                 <Clock className="h-3.5 w-3.5" />

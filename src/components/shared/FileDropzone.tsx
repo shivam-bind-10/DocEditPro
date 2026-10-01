@@ -11,19 +11,29 @@ interface FileDropzoneProps {
   onFilesSelected: (files: File[]) => void;
   accept?: string[]; // e.g. ['.pdf', 'image/*']
   multiple?: boolean;
+  maxFiles?: number; // alias for multiple (>1 means multiple=true)
   maxSizeMB?: number;
   label?: string;
+  title?: string;      // alias for label
   helperText?: string;
+  description?: string; // alias for helperText
 }
 
 export function FileDropzone({
   onFilesSelected,
   accept = ['.pdf'],
-  multiple = false,
+  multiple,
+  maxFiles,
   maxSizeMB = 200,
-  label = "Drag & drop PDF files here, or click to browse",
-  helperText = `Supports PDF files up to ${maxSizeMB}MB. 100% processed locally in your browser.`,
+  label,
+  title,
+  helperText,
+  description,
 }: FileDropzoneProps) {
+  // Resolve aliases
+  const isMultiple = multiple ?? (maxFiles !== undefined ? maxFiles > 1 : false);
+  const resolvedLabel = label ?? title ?? "Drag & drop PDF files here, or click to browse";
+  const resolvedHelperText = helperText ?? description ?? `Supports PDF files up to ${maxSizeMB}MB. 100% processed locally in your browser.`;
   const [isDragActive, setIsDragActive] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [showUrlInput, setShowUrlInput] = React.useState(false);
@@ -47,10 +57,10 @@ export function FileDropzone({
       }
 
       if (validFiles.length > 0) {
-        onFilesSelected(multiple ? validFiles : [validFiles[0]]);
+        onFilesSelected(isMultiple ? validFiles : [validFiles[0]]);
       }
     },
-    [accept, maxSizeMB, multiple, onFilesSelected]
+    [accept, maxSizeMB, isMultiple, onFilesSelected]
   );
 
   const handleDragOver = (e: React.DragEvent) => {
@@ -130,7 +140,7 @@ export function FileDropzone({
           ref={fileInputRef}
           type="file"
           accept={accept.join(",")}
-          multiple={multiple}
+          multiple={isMultiple}
           onChange={handleFileChange}
           className="hidden"
         />
@@ -140,10 +150,10 @@ export function FileDropzone({
         </div>
 
         <h3 className="text-base font-semibold text-[var(--foreground)] mb-1">
-          {label}
+          {resolvedLabel}
         </h3>
         <p className="text-xs text-[var(--muted-foreground)] max-w-md leading-relaxed mb-4">
-          {helperText}
+          {resolvedHelperText}
         </p>
 
         <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-[var(--subtle-foreground)]">

@@ -107,7 +107,7 @@ export default function PdfAPage() {
         {/* Upload State */}
         {!file ? (
           <FileDropzone
-            accept={{ "application/pdf": [".pdf"] }}
+            accept={[".pdf"]}
             maxFiles={1}
             onFilesSelected={handleFileSelected}
             title="Drop PDF to convert to PDF/A"

@@ -190,7 +190,7 @@ export default function BatchQueuePage() {
         {/* Upload Zone */}
         {files.length === 0 ? (
           <FileDropzone
-            accept={{ "application/pdf": [".pdf"] }}
+            accept={[".pdf"]}
             maxFiles={50}
             onFilesSelected={handleFilesSelected}
             title="Drop multiple PDF files to queue for batch processing"

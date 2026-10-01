@@ -108,7 +108,7 @@ export default function FillFormPage() {
         {/* Upload State */}
         {!file ? (
           <FileDropzone
-            accept={{ "application/pdf": [".pdf"] }}
+            accept={[".pdf"]}
             maxFiles={1}
             onFilesSelected={handleFileSelected}
             title="Drop interactive PDF form here"

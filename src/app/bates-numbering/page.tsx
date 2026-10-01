@@ -139,7 +139,7 @@ export default function BatesNumberingPage() {
         {/* Upload Zone */}
         {files.length === 0 ? (
           <FileDropzone
-            accept={{ "application/pdf": [".pdf"] }}
+            accept={[".pdf"]}
             maxFiles={50}
             onFilesSelected={handleFilesSelected}
             title="Drop PDF documents here to apply Bates numbering"
