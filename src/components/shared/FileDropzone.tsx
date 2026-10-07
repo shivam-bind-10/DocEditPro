@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { UploadCloud, Link as LinkIcon, AlertCircle, FileText, Sparkles, Shield } from "lucide-react";
+import { UploadCloud, Link as LinkIcon, AlertCircle, FileText, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { validateFile } from "@/lib/pdf/file-validation";
 import { Button } from "@/components/ui/button";
@@ -9,14 +9,14 @@ import { Input } from "@/components/ui/input";
 
 interface FileDropzoneProps {
   onFilesSelected: (files: File[]) => void;
-  accept?: string[]; // e.g. ['.pdf', 'image/*']
+  accept?: string[];
   multiple?: boolean;
-  maxFiles?: number; // alias for multiple (>1 means multiple=true)
+  maxFiles?: number;
   maxSizeMB?: number;
   label?: string;
-  title?: string;      // alias for label
+  title?: string;
   helperText?: string;
-  description?: string; // alias for helperText
+  description?: string;
 }
 
 export function FileDropzone({
@@ -30,10 +30,9 @@ export function FileDropzone({
   helperText,
   description,
 }: FileDropzoneProps) {
-  // Resolve aliases
   const isMultiple = multiple ?? (maxFiles !== undefined ? maxFiles > 1 : false);
-  const resolvedLabel = label ?? title ?? "Drag & drop your files here, or click to browse";
-  const resolvedHelperText = helperText ?? description ?? `Supports files up to ${maxSizeMB}MB. 100% processed locally in your browser.`;
+  const resolvedLabel = label ?? title ?? "Drag & drop files here, or click to browse";
+  const resolvedHelperText = helperText ?? description ?? `Supports files up to ${maxSizeMB}MB. Processed 100% locally in your browser.`;
   const [isDragActive, setIsDragActive] = React.useState(false);
   const [errorMessage, setErrorMessage] = React.useState<string | null>(null);
   const [showUrlInput, setShowUrlInput] = React.useState(false);
@@ -90,7 +89,6 @@ export function FileDropzone({
     }
   };
 
-  // Clipboard paste support
   React.useEffect(() => {
     const handlePaste = (e: ClipboardEvent) => {
       if (e.clipboardData && e.clipboardData.files.length > 0) {
@@ -122,23 +120,20 @@ export function FileDropzone({
   };
 
   return (
-    <div className="w-full space-y-4">
+    <div className="w-full space-y-3">
       <div
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
         onDrop={handleDrop}
         onClick={() => fileInputRef.current?.click()}
         className={cn(
-          "relative flex flex-col items-center justify-center rounded-[var(--radius-xl)] border-2 border-dashed p-10 sm:p-14 text-center transition-all duration-300 cursor-pointer select-none overflow-hidden",
+          "relative flex flex-col items-center justify-center rounded-[14px] border-2 border-dashed p-10 sm:p-12 text-center transition-all duration-200 cursor-pointer select-none",
           isDragActive
-            ? "border-blue-500 bg-blue-500/10 scale-[1.01] shadow-[0_0_40px_rgba(59,130,246,0.25)]"
-            : "border-white/[0.12] bg-[var(--surface-card)] hover:border-blue-500/40 hover:bg-[var(--surface-hover)] hover:shadow-2xl",
+            ? "border-[#5645d4] bg-[#5645d4]/10 scale-[1.005]"
+            : "border-white/[0.12] bg-[#202020] hover:border-[#5645d4]/50 hover:bg-[#252525]",
           errorMessage && "border-rose-500/50 bg-rose-500/10"
         )}
       >
-        {/* Bento Glowing Top Line */}
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-blue-500/30 to-transparent" />
-
         <input
           ref={fileInputRef}
           type="file"
@@ -148,24 +143,23 @@ export function FileDropzone({
           className="hidden"
         />
 
-        {/* Floating Upload Icon Pill */}
-        <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-b from-blue-500/20 to-blue-600/10 border border-blue-500/30 text-blue-400 mb-5 shadow-lg shadow-blue-500/10 group-hover:scale-105 transition-transform">
-          <UploadCloud className="h-8 w-8 stroke-[1.8]" />
+        <div className="flex h-13 w-13 items-center justify-center rounded-[10px] bg-[#5645d4]/15 border border-[#5645d4]/30 text-[#c4b5fd] mb-4">
+          <UploadCloud className="h-6 w-6 stroke-[1.8]" />
         </div>
 
-        <h3 className="text-lg font-bold text-[var(--foreground)] mb-1.5">
+        <h3 className="text-base font-bold text-white mb-1">
           {resolvedLabel}
         </h3>
-        <p className="text-xs text-[var(--muted-foreground)] max-w-md leading-relaxed mb-5">
+        <p className="text-xs text-[#9b9b9b] max-w-md leading-relaxed mb-4">
           {resolvedHelperText}
         </p>
 
         {/* Accepted Formats Chips */}
-        <div className="flex items-center space-x-1.5 mb-5">
+        <div className="flex items-center space-x-1.5 mb-4">
           {accept.slice(0, 4).map((ext) => (
             <span
               key={ext}
-              className="px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold bg-white/[0.04] border border-white/[0.08] text-[var(--muted-foreground)] uppercase"
+              className="px-2 py-0.5 rounded-[4px] text-[10px] font-mono font-semibold bg-white/[0.05] border border-white/[0.08] text-[#9b9b9b] uppercase"
             >
               {ext.replace(".", "")}
             </span>
@@ -173,9 +167,9 @@ export function FileDropzone({
         </div>
 
         {/* Shortcut Action Pills */}
-        <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-[var(--subtle-foreground)]">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-[var(--surface-elevated)] px-3 py-1 border border-[var(--border)] text-[11px] font-medium text-[var(--muted-foreground)]">
-            <FileText className="h-3.5 w-3.5 text-blue-400" />
+        <div className="flex flex-wrap items-center justify-center gap-2 text-xs text-[#6b6b6b]">
+          <span className="inline-flex items-center gap-1.5 rounded-full bg-[#191919] px-3 py-0.5 border border-white/[0.08] text-[11px] font-medium text-[#9b9b9b]">
+            <FileText className="h-3 w-3 text-[#a78bfa]" />
             Paste from Clipboard (Ctrl+V)
           </span>
           <span>or</span>
@@ -186,9 +180,9 @@ export function FileDropzone({
               e.stopPropagation();
               setShowUrlInput(!showUrlInput);
             }}
-            className="h-7 text-xs rounded-full px-3"
+            className="h-6 text-xs rounded-full px-2.5 text-[#a78bfa] hover:text-white"
           >
-            <LinkIcon className="h-3.5 w-3.5 mr-1 text-cyan-400" />
+            <LinkIcon className="h-3 w-3 mr-1" />
             Add from URL
           </Button>
         </div>
@@ -198,20 +192,21 @@ export function FileDropzone({
       {showUrlInput && (
         <div
           onClick={(e) => e.stopPropagation()}
-          className="flex items-center space-x-2 rounded-[var(--radius-lg)] border border-[var(--border)] bg-[var(--surface-elevated)] p-3 shadow-xl backdrop-blur-md"
+          className="flex items-center space-x-2 rounded-[10px] border border-white/[0.08] bg-[#262626] p-2.5 shadow-xl"
         >
           <Input
             type="url"
-            placeholder="Paste public document URL (e.g. https://example.com/document.pdf)..."
+            placeholder="Paste public file URL (e.g. https://example.com/document.pdf)..."
             value={url}
             onChange={(e) => setUrl(e.target.value)}
-            className="flex-1 text-xs h-9"
+            className="flex-1 text-xs h-8 bg-[#191919] border-white/[0.08]"
           />
           <Button
             variant="primary"
             size="sm"
             onClick={handleUrlFetch}
             disabled={isLoadingUrl || !url.trim()}
+            className="h-8 text-xs"
           >
             {isLoadingUrl ? "Fetching..." : "Fetch File"}
           </Button>
@@ -220,7 +215,7 @@ export function FileDropzone({
 
       {/* Error Banner */}
       {errorMessage && (
-        <div className="flex items-center space-x-2 rounded-[var(--radius-md)] border border-rose-500/30 bg-rose-500/10 p-3 text-xs text-rose-300">
+        <div className="flex items-center space-x-2 rounded-[8px] border border-rose-500/30 bg-rose-500/10 p-2.5 text-xs text-rose-300">
           <AlertCircle className="h-4 w-4 shrink-0 text-rose-400" />
           <span>{errorMessage}</span>
         </div>

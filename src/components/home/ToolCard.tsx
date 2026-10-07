@@ -47,11 +47,10 @@ import {
   GitCompare,
   Wrench,
   HelpCircle,
-  ArrowUpRight,
+  ArrowRight,
   Sparkles,
 } from "lucide-react";
 import { Tool } from "@/lib/tools-data";
-import { Badge } from "@/components/ui/badge";
 
 const ICON_MAP: Record<string, React.ElementType> = {
   Combine,
@@ -100,74 +99,69 @@ const ICON_MAP: Record<string, React.ElementType> = {
   Wrench,
 };
 
-const CATEGORY_STYLES: Record<
+const NOTION_PASTEL_CATEGORIES: Record<
   string,
-  { bg: string; text: string; glow: string; border: string }
+  { bg: string; text: string; border: string; chipBg: string }
 > = {
   essentials: {
-    bg: "bg-blue-500/10",
+    bg: "bg-[rgba(59,130,246,0.12)]",
     text: "text-blue-400",
-    glow: "group-hover:shadow-blue-500/20",
-    border: "group-hover:border-blue-500/40",
+    border: "border-blue-500/25",
+    chipBg: "bg-blue-500/10 text-blue-300",
   },
   "edit-organize": {
-    bg: "bg-purple-500/10",
-    text: "text-purple-400",
-    glow: "group-hover:shadow-purple-500/20",
-    border: "group-hover:border-purple-500/40",
+    bg: "bg-[rgba(86,69,212,0.14)]",
+    text: "text-[#a78bfa]",
+    border: "border-[#8b5cf6]/30",
+    chipBg: "bg-[#5645d4]/15 text-[#c4b5fd]",
   },
   "security-privacy": {
-    bg: "bg-emerald-500/10",
+    bg: "bg-[rgba(34,197,94,0.12)]",
     text: "text-emerald-400",
-    glow: "group-hover:shadow-emerald-500/20",
-    border: "group-hover:border-emerald-500/40",
+    border: "border-emerald-500/25",
+    chipBg: "bg-emerald-500/10 text-emerald-300",
   },
   "convert-export": {
-    bg: "bg-cyan-500/10",
+    bg: "bg-[rgba(6,182,212,0.12)]",
     text: "text-cyan-400",
-    glow: "group-hover:shadow-cyan-500/20",
-    border: "group-hover:border-cyan-500/40",
+    border: "border-cyan-500/25",
+    chipBg: "bg-cyan-500/10 text-cyan-300",
   },
   "scan-share": {
-    bg: "bg-amber-500/10",
+    bg: "bg-[rgba(234,179,8,0.12)]",
     text: "text-amber-400",
-    glow: "group-hover:shadow-amber-500/20",
-    border: "group-hover:border-amber-500/40",
+    border: "border-amber-500/25",
+    chipBg: "bg-amber-500/10 text-amber-300",
   },
   business: {
-    bg: "bg-rose-500/10",
+    bg: "bg-[rgba(244,63,94,0.12)]",
     text: "text-rose-400",
-    glow: "group-hover:shadow-rose-500/20",
-    border: "group-hover:border-rose-500/40",
+    border: "border-rose-500/25",
+    chipBg: "bg-rose-500/10 text-rose-300",
   },
 };
 
 export function ToolCard({ tool }: { tool: Tool }) {
   const IconComponent = ICON_MAP[tool.icon] || HelpCircle;
-  const style = CATEGORY_STYLES[tool.category] || CATEGORY_STYLES.essentials;
+  const style = NOTION_PASTEL_CATEGORIES[tool.category] || NOTION_PASTEL_CATEGORIES.essentials;
 
   return (
     <Link href={`/${tool.slug}`} className="block group h-full">
-      <div
-        className={`h-full flex flex-col justify-between p-5 rounded-[var(--radius-lg)] bg-[var(--surface-card)] border border-[var(--border)] backdrop-blur-md transition-all duration-300 ${style.border} ${style.glow} hover:shadow-xl hover:-translate-y-1 relative overflow-hidden`}
-      >
-        {/* Top Glowing Edge on hover */}
-        <div className="absolute top-0 left-0 right-0 h-[1px] bg-gradient-to-r from-transparent via-white/10 to-transparent group-hover:via-blue-400/40 transition-opacity" />
-
+      <div className="h-full flex flex-col justify-between p-5 rounded-[14px] bg-[#202020] border border-white/[0.08] hover:border-[#5645d4]/50 hover:bg-[#252525] transition-all duration-200 hover:shadow-lg hover:shadow-black/40 hover:-translate-y-0.5 relative">
         <div>
           <div className="flex items-center justify-between mb-3.5">
-            {/* Bento Icon Badge */}
+            {/* Notion Style Icon Chip */}
             <div
-              className={`flex h-10 w-10 items-center justify-center rounded-[var(--radius-md)] ${style.bg} ${style.text} border border-white/[0.06] group-hover:scale-110 group-hover:rotate-1 transition-transform duration-300 shadow-sm`}
+              className={`flex h-9 w-9 items-center justify-center rounded-[8px] ${style.bg} ${style.text} border ${style.border} group-hover:scale-105 transition-transform`}
             >
-              <IconComponent className="h-5 w-5 stroke-[1.8]" />
+              <IconComponent className="h-4.5 w-4.5 stroke-[1.8]" />
             </div>
 
             {/* Badges */}
             <div className="flex items-center space-x-1.5">
               {tool.popular && (
-                <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-blue-500/15 text-blue-300 border border-blue-500/30 shadow-xs">
-                  <Sparkles className="h-2.5 w-2.5 text-blue-400" />
+                <span className="inline-flex items-center space-x-1 px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#5645d4]/20 text-[#c4b5fd] border border-[#5645d4]/30">
+                  <Sparkles className="h-2.5 w-2.5 text-[#a78bfa]" />
                   <span>Popular</span>
                 </span>
               )}
@@ -179,9 +173,9 @@ export function ToolCard({ tool }: { tool: Tool }) {
             </div>
           </div>
 
-          <h3 className="text-sm sm:text-base font-bold text-[var(--foreground)] group-hover:text-[var(--accent)] transition-colors mb-1.5 flex items-center justify-between">
+          <h3 className="text-sm sm:text-base font-bold text-[var(--foreground)] group-hover:text-[#a78bfa] transition-colors mb-1.5 flex items-center justify-between">
             <span className="truncate">{tool.name}</span>
-            <ArrowUpRight className="h-4 w-4 text-[var(--subtle-foreground)] opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-all shrink-0 ml-1" />
+            <ArrowRight className="h-3.5 w-3.5 text-[var(--muted-foreground)] opacity-0 group-hover:opacity-100 group-hover:translate-x-0.5 transition-all shrink-0 ml-1" />
           </h3>
 
           <p className="text-xs text-[var(--muted-foreground)] leading-relaxed line-clamp-2">
@@ -191,9 +185,8 @@ export function ToolCard({ tool }: { tool: Tool }) {
 
         <div className="pt-3 mt-3 border-t border-white/[0.04] flex items-center justify-between text-[11px] text-[var(--subtle-foreground)]">
           <span className="capitalize font-mono text-[10px]">{tool.category.replace("-", " ")}</span>
-          <span className="text-[var(--accent)] font-medium opacity-0 group-hover:opacity-100 transition-opacity flex items-center space-x-0.5">
-            <span>Use tool</span>
-            <span>→</span>
+          <span className="text-[#a78bfa] font-medium text-[11px] opacity-0 group-hover:opacity-100 transition-opacity">
+            Open tool →
           </span>
         </div>
       </div>

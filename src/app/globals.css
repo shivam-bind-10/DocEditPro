@@ -1,48 +1,57 @@
 @import "tailwindcss";
 
 :root {
-  /* Dark Bento Surfaces */
-  --background: #08080b;        /* Deep space backdrop */
-  --surface: #0e0e14;           /* Glass bento panels */
-  --surface-hover: #151520;      /* Elevated hover */
-  --surface-elevated: #1a1a26;  /* Modals & floating widgets */
-  --surface-card: rgba(18, 18, 26, 0.75);
+  /* Notion Color Tokens per DESIGN.md */
+  --background: #191919;        /* Notion dark document canvas */
+  --surface: #202020;           /* Notion workspace cards, panels */
+  --surface-hover: #2c2c2c;      /* Notion hover state */
+  --surface-elevated: #262626;  /* Modals, popovers, dropdowns */
+  --surface-card: rgba(32, 32, 32, 0.85);
 
-  /* Bento Glowing Borders */
-  --border: rgba(255, 255, 255, 0.08);
-  --border-hover: rgba(59, 130, 246, 0.35);
-  --border-glow: rgba(99, 102, 241, 0.25);
-
-  /* Foreground & Typography */
-  --foreground: #f8fafc;
-  --muted-foreground: #94a3b8;
-  --subtle-foreground: #64748b;
-
-  /* Vibrant Accents */
-  --accent: #3b82f6;
-  --accent-hover: #60a5fa;
+  /* Notion Signature Brand Colors */
+  --accent: #5645d4;            /* Notion Purple */
+  --accent-hover: #4838bc;      /* Notion Purple Hover */
   --accent-foreground: #ffffff;
-  --accent-glow: rgba(59, 130, 246, 0.3);
+  --accent-light: rgba(86, 69, 212, 0.14);
+  --notion-navy: #0a1530;       /* Notion Deep Navy */
+  --notion-navy-card: #0f1d40;
 
-  --accent-cyan: #06b6d4;
-  --accent-purple: #8b5cf6;
-  --accent-emerald: #10b981;
-  --accent-amber: #f59e0b;
-  --accent-rose: #f43f5e;
+  /* Notion Pastel Tint Spectrum */
+  --notion-mint: #22c55e;
+  --notion-mint-bg: rgba(34, 197, 94, 0.12);
+  --notion-sky: #3b82f6;
+  --notion-sky-bg: rgba(59, 130, 246, 0.12);
+  --notion-lavender: #8b5cf6;
+  --notion-lavender-bg: rgba(139, 92, 246, 0.14);
+  --notion-rose: #ef4444;
+  --notion-rose-bg: rgba(239, 68, 68, 0.12);
+  --notion-peach: #f97316;
+  --notion-peach-bg: rgba(249, 115, 22, 0.12);
+  --notion-cream: #eab308;
+  --notion-cream-bg: rgba(234, 179, 8, 0.12);
+
+  /* Hairline Borders */
+  --border: rgba(255, 255, 255, 0.08);
+  --border-hover: rgba(86, 69, 212, 0.45);
+  --border-subtle: rgba(255, 255, 255, 0.05);
+
+  /* Typography & Foreground */
+  --foreground: #ffffff;
+  --muted-foreground: #9b9b9b;
+  --subtle-foreground: #6b6b6b;
 
   /* Semantic */
-  --success: #10b981;
-  --warning: #f59e0b;
+  --success: #22c55e;
+  --warning: #eab308;
   --danger: #ef4444;
+  --ring: #5645d4;
 
-  /* Focus ring */
-  --ring: #3b82f6;
-
-  /* Bento Radius */
-  --radius-sm: 8px;
-  --radius-md: 14px;
-  --radius-lg: 20px;
-  --radius-xl: 26px;
+  /* Radii */
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 14px;
+  --radius-xl: 22px;
+  --radius-pill: 9999px;
 }
 
 @theme inline {
@@ -69,8 +78,8 @@
   --radius-lg: var(--radius-lg);
   --radius-xl: var(--radius-xl);
 
-  --font-sans: var(--font-geist-sans), Inter, system-ui, -apple-system, sans-serif;
-  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-sans: Inter, "Notion Sans", system-ui, -apple-system, sans-serif;
+  --font-mono: ui-monospace, "SF Mono", Menlo, Monaco, Consolas, monospace;
 }
 
 * {
@@ -85,77 +94,38 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background-image: 
-    radial-gradient(circle at 50% 0%, rgba(59, 130, 246, 0.08) 0%, transparent 60%),
-    radial-gradient(circle at 100% 30%, rgba(139, 92, 246, 0.04) 0%, transparent 50%),
-    radial-gradient(circle at 0% 70%, rgba(6, 182, 212, 0.04) 0%, transparent 50%);
+  background-image:
+    radial-gradient(circle at 50% 0%, rgba(86, 69, 212, 0.08) 0%, transparent 55%),
+    radial-gradient(circle at 100% 25%, rgba(10, 21, 48, 0.5) 0%, transparent 50%);
   background-attachment: fixed;
 }
 
-/* Bento Glass Panels */
-.bento-card {
-  background: var(--surface-card);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
+/* Notion Callout Block */
+.notion-callout {
+  background: rgba(86, 69, 212, 0.08);
+  border: 1px solid rgba(86, 69, 212, 0.25);
+  border-radius: var(--radius-md);
+  padding: 14px 18px;
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+/* Notion Card Styling */
+.notion-card {
+  background: var(--surface);
   border: 1px solid var(--border);
   border-radius: var(--radius-lg);
-  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  position: relative;
-  overflow: hidden;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-.bento-card:hover {
+.notion-card:hover {
   border-color: var(--border-hover);
-  box-shadow: 0 0 35px -5px rgba(59, 130, 246, 0.15), 0 20px 25px -5px rgba(0, 0, 0, 0.5);
-  transform: translateY(-2px);
+  box-shadow: 0 6px 20px -4px rgba(0, 0, 0, 0.4), 0 0 24px -4px rgba(86, 69, 212, 0.2);
+  transform: translateY(-1.5px);
 }
 
-.bento-glow {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 1px;
-  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.15), transparent);
-}
-
-/* Subtle scan animation for OCR preview */
-@keyframes bento-scan {
-  0% {
-    top: 0%;
-    opacity: 0.8;
-  }
-  50% {
-    top: 90%;
-    opacity: 1;
-  }
-  100% {
-    top: 0%;
-    opacity: 0.8;
-  }
-}
-
-.animate-bento-scan {
-  animation: bento-scan 3.5s ease-in-out infinite;
-}
-
-/* Pulse glow for privacy badge */
-@keyframes bento-pulse {
-  0%, 100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-  50% {
-    opacity: 0.6;
-    transform: scale(1.15);
-  }
-}
-
-.animate-bento-pulse {
-  animation: bento-pulse 2s ease-in-out infinite;
-}
-
-/* Custom scrollbars */
+/* Custom Notion Scrollbars */
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -168,7 +138,7 @@ body {
   border-radius: 4px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(255, 255, 255, 0.22);
+  background: rgba(255, 255, 255, 0.2);
 }
 
 /* Accessibility: Skip to Content Link */
@@ -195,7 +165,7 @@ body {
   outline-offset: 2px;
 }
 
-/* Accessibility: Reduced Motion Support */
+/* Accessibility: Reduced Motion */
 @media (prefers-reduced-motion: reduce) {
   *,
   ::before,
