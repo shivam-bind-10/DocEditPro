@@ -38,12 +38,18 @@ export function Footer() {
             </span>
           </div>
 
-          <div className="mt-4 flex space-x-6 text-xs text-[var(--muted-foreground)] sm:mt-0">
+          <div className="mt-4 flex flex-wrap items-center gap-4 text-xs text-[var(--muted-foreground)] sm:mt-0">
+            <Link href="/guides" className="hover:text-[var(--foreground)] transition-colors underline-offset-4 hover:underline">
+              How-To Guides
+            </Link>
+            <span>·</span>
+            <Link href="/edit-pdf-text" className="hover:text-[var(--foreground)] transition-colors underline-offset-4 hover:underline">
+              PDF Editor
+            </Link>
+            <span>·</span>
             <span>No Server Uploads</span>
             <span>·</span>
             <span>No Watermarks</span>
-            <span>·</span>
-            <span>No Trackers</span>
           </div>
         </div>
       </div>

@@ -12,13 +12,29 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: tool.popular ? 0.9 : 0.7,
   }));
 
+  const extraPages = [
+    "/pdf-editor",
+    "/guides",
+    "/batch-queue",
+    "/signature-library",
+    "/fill-form",
+    "/bates-numbering",
+    "/pdf-a",
+  ].map((slug) => ({
+    url: `${baseUrl}${slug}`,
+    lastModified: now,
+    changeFrequency: "monthly" as const,
+    priority: 0.8,
+  }));
+
   return [
     {
       url: baseUrl,
       lastModified: now,
-      changeFrequency: "weekly",
+      changeFrequency: "weekly" as const,
       priority: 1.0,
     },
     ...toolPages,
+    ...extraPages,
   ];
 }

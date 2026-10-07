@@ -78,6 +78,11 @@ export function Header() {
                 <Clock className="h-3.5 w-3.5" />
                 <span className="hidden md:inline">Recents</span>
               </button>
+              <Link href="/guides" className="hidden md:inline-block">
+                <Button variant="ghost" size="sm">
+                  Guides
+                </Button>
+              </Link>
               <Link href="/#all-tools" className="hidden md:inline-block">
                 <Button variant="ghost" size="sm">
                   All Tools
