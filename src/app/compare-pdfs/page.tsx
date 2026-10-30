@@ -9,13 +9,13 @@ import { Card } from "@/components/ui/card";
 import { FileText, GitCompare, ChevronUp, ChevronDown } from "lucide-react";
 import { formatBytes } from "@/lib/utils";
 import { diff_match_patch } from "diff-match-patch";
+import { getPdfjs } from "@/lib/pdf/pdfjs-init";
 
 const tool = TOOLS.find((t) => t.id === "compare-pdfs")!;
 
 async function extractPdfText(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdfjsLib = await import("pdfjs-dist");
-  pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+  const pdfjsLib = await getPdfjs();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer } as any).promise;

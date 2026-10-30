@@ -1,4 +1,5 @@
 import { PDFDocument, rgb, degrees, StandardFonts } from 'pdf-lib';
+import { getPdfjs } from './pdfjs-init';
 
 export async function mergePdfFiles(files: File[]): Promise<Uint8Array> {
   const mergedPdf = await PDFDocument.create();
@@ -41,60 +42,108 @@ export async function compressPdfFile(
   level: 'light' | 'medium' | 'heavy' = 'medium'
 ): Promise<Uint8Array> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdfDoc = await PDFDocument.load(arrayBuffer);
+  const originalBytes = new Uint8Array(arrayBuffer);
 
-  // Apply object stream compression & strip unused objects
-  const qualityMap = { light: 0.85, medium: 0.65, heavy: 0.45 };
-  const quality = qualityMap[level];
+  // Compression presets configured for real reduction
+  const presets = {
+    light: { quality: 0.78, scale: 1.1, threshold: 0.88 },
+    medium: { quality: 0.60, scale: 0.95, threshold: 0.65 },
+    heavy: { quality: 0.42, scale: 0.80, threshold: 0.45 },
+  };
+  const config = presets[level];
 
-  // Re-encode embedded image streams if possible or resave with compressed structures
-  const pdfBytes = await pdfDoc.save({
-    useObjectStreams: true,
-    addDefaultPage: false,
-    objectsPerTick: 50,
-  });
-
-  // If initial structural compression wasn't enough for heavy level, canvas fallback re-encode
-  if (level === 'heavy' && pdfBytes.length >= file.size) {
-    const images = await renderPdfToCanvasBlobs(file, quality);
-    return await createPdfFromCanvasBlobs(images);
+  // 1. Try structural stream compression first
+  let structuralBytes: Uint8Array | null = null;
+  try {
+    const pdfDoc = await PDFDocument.load(arrayBuffer, { ignoreEncryption: true });
+    structuralBytes = await pdfDoc.save({
+      useObjectStreams: true,
+      addDefaultPage: false,
+      objectsPerTick: 50,
+    });
+  } catch {
+    structuralBytes = null;
   }
 
-  return pdfBytes;
+  // If structural compression achieved target reduction, use it
+  if (structuralBytes && structuralBytes.length < file.size * config.threshold) {
+    return structuralBytes;
+  }
+
+  // 2. Perform intelligent raster downsampling & image re-encoding
+  try {
+    const images = await renderPdfToCanvasBlobs(file, config.quality, config.scale, 'image/jpeg');
+    const rasterBytes = await createPdfFromCanvasBlobs(images);
+
+    // Pick smallest valid result
+    let candidate = rasterBytes;
+    if (structuralBytes && structuralBytes.length < candidate.length) {
+      candidate = structuralBytes;
+    }
+
+    if (candidate.length < file.size) {
+      return candidate;
+    }
+
+    // Fallback: If still >= file.size on light/medium, try slightly lower quality
+    if (level !== 'heavy') {
+      const fallbackImages = await renderPdfToCanvasBlobs(
+        file,
+        Math.max(0.38, config.quality - 0.2),
+        Math.min(config.scale, 0.85),
+        'image/jpeg'
+      );
+      const fallbackBytes = await createPdfFromCanvasBlobs(fallbackImages);
+      if (fallbackBytes.length < file.size) {
+        return fallbackBytes;
+      }
+    }
+
+    if (structuralBytes && structuralBytes.length < originalBytes.length) {
+      return structuralBytes;
+    }
+    return originalBytes;
+  } catch {
+    if (structuralBytes && structuralBytes.length < file.size) {
+      return structuralBytes;
+    }
+    return originalBytes;
+  }
 }
 
 export async function renderPdfToCanvasBlobs(
   file: File,
   quality = 0.7,
-  scale = 1.5,
+  scale = 1.0,
   mimeType = 'image/jpeg'
-): Promise<{ pageIndex: number; blob: Blob }[]> {
+): Promise<{ pageIndex: number; blob: Blob; width: number; height: number }[]> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdfjsLib = typeof window !== 'undefined'
-    ? await import('pdfjs-dist')
-    : await import('pdfjs-dist/legacy/build/pdf.mjs');
-  if (typeof window !== 'undefined') {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-  }
+  const pdfjsLib = await getPdfjs();
 
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
-  const results: { pageIndex: number; blob: Blob }[] = [];
+  const results: { pageIndex: number; blob: Blob; width: number; height: number }[] = [];
 
   for (let i = 1; i <= pdf.numPages; i++) {
     const page = await pdf.getPage(i);
-    const viewport = page.getViewport({ scale });
+    const defaultViewport = page.getViewport({ scale: 1.0 });
+    const renderViewport = page.getViewport({ scale });
 
     const canvas = document.createElement('canvas');
     const context = canvas.getContext('2d');
-    canvas.width = viewport.width;
-    canvas.height = viewport.height;
+    canvas.width = Math.round(renderViewport.width);
+    canvas.height = Math.round(renderViewport.height);
 
     if (context) {
-      await page.render({ canvasContext: context, viewport, canvas }).promise;
+      await page.render({ canvasContext: context, viewport: renderViewport, canvas }).promise;
       const blob = await new Promise<Blob>((resolve) => {
         canvas.toBlob((b) => resolve(b || new Blob()), mimeType, quality);
       });
-      results.push({ pageIndex: i - 1, blob });
+      results.push({
+        pageIndex: i - 1,
+        blob,
+        width: defaultViewport.width,
+        height: defaultViewport.height,
+      });
     }
   }
 
@@ -102,24 +151,31 @@ export async function renderPdfToCanvasBlobs(
 }
 
 export async function createPdfFromCanvasBlobs(
-  items: { pageIndex: number; blob: Blob }[]
+  items: { pageIndex: number; blob: Blob; width?: number; height?: number }[]
 ): Promise<Uint8Array> {
   const pdfDoc = await PDFDocument.create();
 
   for (const item of items) {
     const imageBytes = await item.blob.arrayBuffer();
-    const image = await pdfDoc.embedJpg(imageBytes);
-    const page = pdfDoc.addPage([image.width, image.height]);
+    const isPng = item.blob.type === 'image/png';
+    const image = isPng
+      ? await pdfDoc.embedPng(imageBytes)
+      : await pdfDoc.embedJpg(imageBytes);
+
+    const pageWidth = item.width || image.width;
+    const pageHeight = item.height || image.height;
+    const page = pdfDoc.addPage([pageWidth, pageHeight]);
     page.drawImage(image, {
       x: 0,
       y: 0,
-      width: image.width,
-      height: image.height,
+      width: pageWidth,
+      height: pageHeight,
     });
   }
 
-  return await pdfDoc.save();
+  return await pdfDoc.save({ useObjectStreams: true });
 }
+
 
 export async function convertImagesToPdf(
   files: File[],
@@ -533,12 +589,7 @@ export async function cropAndResizePdf(
 
 export async function extractTextFromPdf(file: File): Promise<string> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdfjsLib = typeof window !== 'undefined'
-    ? await import('pdfjs-dist')
-    : await import('pdfjs-dist/legacy/build/pdf.mjs');
-  if (typeof window !== 'undefined') {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-  }
+  const pdfjsLib = await getPdfjs();
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const pdf = await pdfjsLib.getDocument({

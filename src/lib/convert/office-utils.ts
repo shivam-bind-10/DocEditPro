@@ -1,6 +1,8 @@
 import mammoth from 'mammoth';
 import { Document, Paragraph, TextRun, Packer, HeadingLevel } from 'docx';
 import { PDFDocument, StandardFonts, rgb } from 'pdf-lib';
+import { getPdfjs } from '../pdf/pdfjs-init';
+
 
 export async function convertWordToPdf(file: File): Promise<Uint8Array> {
   const arrayBuffer = await file.arrayBuffer();
@@ -94,13 +96,7 @@ export async function convertWordToPdf(file: File): Promise<Uint8Array> {
 
 export async function convertPdfToWord(file: File): Promise<Blob> {
   const arrayBuffer = await file.arrayBuffer();
-  const pdfjsLib = typeof window !== 'undefined'
-    ? await import('pdfjs-dist')
-    : await import('pdfjs-dist/legacy/build/pdf.mjs');
-
-  if (typeof window !== 'undefined') {
-    pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
-  }
+  const pdfjsLib = await getPdfjs();
 
   const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
   const docParagraphs: Paragraph[] = [];

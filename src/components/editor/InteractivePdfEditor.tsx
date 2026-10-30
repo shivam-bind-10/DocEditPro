@@ -102,8 +102,18 @@ export interface DetectedTextItem {
   fontSize: number;
   fontFamily: string;
   color?: string;
+  isBold?: boolean;
+  isItalic?: boolean;
   isEdited?: boolean;
 }
+
+export const getCssFontFamily = (family?: string): string => {
+  if (!family) return "'Helvetica Neue', Helvetica, Arial, sans-serif";
+  const f = family.toLowerCase();
+  if (f.includes("times") || f.includes("serif")) return "'Times New Roman', Times, Georgia, serif";
+  if (f.includes("courier") || f.includes("mono")) return "'Courier New', Courier, monospace";
+  return "'Helvetica Neue', Helvetica, Arial, sans-serif";
+};
 
 export interface PageMeta {
   pageNumber: number; // 1-based
@@ -212,6 +222,18 @@ export function InteractivePdfEditor({
   const [activeStrokeWidth, setActiveStrokeWidth] = React.useState<number>(3);
   const [activeFillColor, setActiveFillColor] = React.useState<string>("transparent");
 
+  // Keep active styling in sync with selected text element
+  React.useEffect(() => {
+    if (selectedElementId) {
+      const el = elements.find((e) => e.id === selectedElementId);
+      if (el && el.type === "text") {
+        if (el.fontSize) setActiveFontSize(el.fontSize);
+        if (el.fontFamily) setActiveFontFamily(el.fontFamily);
+        if (el.color) setActiveColor(el.color);
+      }
+    }
+  }, [selectedElementId, elements]);
+
   // Modals
   const [showSigModal, setShowSigModal] = React.useState<boolean>(false);
   const [showStampModal, setShowStampModal] = React.useState<boolean>(false);
@@ -277,92 +299,111 @@ export function InteractivePdfEditor({
             await page.render({ canvasContext: ctx, viewport, canvas }).promise;
           }
 
-          // Extract text items with exact bounding boxes
-          try {
-            const textContent = await page.getTextContent();
-            const rawItems: {
-              str: string;
-              x: number;
-              y: number;
-              width: number;
-              height: number;
-              fontSize: number;
-              fontName: string;
-            }[] = [];
+            // Extract text items with exact bounding boxes
+            try {
+              const textContent = await page.getTextContent();
+              const rawItems: {
+                str: string;
+                x: number;
+                y: number;
+                width: number;
+                height: number;
+                fontSize: number;
+                fontName: string;
+                isBold: boolean;
+                isItalic: boolean;
+              }[] = [];
 
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            for (const item of textContent.items as any[]) {
-              if (!item.str || !item.str.trim()) continue;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              for (const item of textContent.items as any[]) {
+                if (!item.str || !item.str.trim()) continue;
 
-              const tx = item.transform[4];
-              const ty = item.transform[5];
-              const fontSize =
-                Math.hypot(item.transform[2], item.transform[3]) ||
-                Math.abs(item.transform[3]) ||
-                12;
+                const tx = item.transform[4];
+                const ty = item.transform[5];
+                const fontSize =
+                  Math.hypot(item.transform[2], item.transform[3]) ||
+                  Math.abs(item.transform[3]) ||
+                  12;
 
-              const [vx, baselineVy] = defaultViewport.convertToViewportPoint(tx, ty);
-              const width = item.width || fontSize * item.str.length * 0.55;
-              const height = Math.max(item.height || 0, fontSize * 1.15);
-              const topY = baselineVy - fontSize * 0.88;
+                const [vx, baselineVy] = defaultViewport.convertToViewportPoint(tx, ty);
+                const width = item.width || fontSize * item.str.length * 0.55;
+                const height = Math.max(item.height || 0, fontSize * 1.15);
+                const topY = baselineVy - fontSize * 0.88;
 
-              let family = "Helvetica";
-              const fn = (item.fontName || "").toLowerCase();
-              if (fn.includes("times") || fn.includes("serif")) family = "TimesRoman";
-              if (fn.includes("courier") || fn.includes("mono")) family = "Courier";
+                let family = "Helvetica";
+                const fn = (item.fontName || "").toLowerCase();
+                if (fn.includes("times") || fn.includes("serif")) family = "TimesRoman";
+                if (fn.includes("courier") || fn.includes("mono")) family = "Courier";
 
-              rawItems.push({
-                str: item.str,
-                x: Math.max(0, vx),
-                y: Math.max(0, topY),
-                width: Math.max(8, width),
-                height: Math.max(10, height),
-                fontSize: Math.round(fontSize),
-                fontName: family,
-              });
-            }
+                const isBold =
+                  fn.includes("bold") ||
+                  fn.includes("heavy") ||
+                  fn.includes("black") ||
+                  fn.includes("semibold") ||
+                  fn.includes("w7") ||
+                  fn.includes("w8") ||
+                  fn.includes("w9");
+                const isItalic = fn.includes("italic") || fn.includes("oblique");
 
-            // Cluster adjacent items on the same baseline into cohesive readable lines
-            const clustered: DetectedTextItem[] = [];
-            const lineThreshold = 5;
-            rawItems.sort((a, b) =>
-              Math.abs(a.y - b.y) <= lineThreshold ? a.x - b.x : a.y - b.y
-            );
-
-            for (const it of rawItems) {
-              const last = clustered[clustered.length - 1];
-              if (
-                last &&
-                Math.abs(last.y - it.y) <= lineThreshold &&
-                it.x >= last.x &&
-                it.x - (last.x + last.width) <= it.fontSize * 1.8
-              ) {
-                const gap = it.x - (last.x + last.width);
-                const addSpace = gap > it.fontSize * 0.2 ? " " : "";
-                last.text = last.text + addSpace + it.str;
-                last.width = Math.max(last.width, it.x + it.width - last.x);
-                last.height = Math.max(last.height, it.height);
-                last.fontSize = Math.max(last.fontSize, it.fontSize);
-              } else {
-                clustered.push({
-                  id: `orig-${i - 1}-${clustered.length}-${Math.random().toString(36).substring(2, 6)}`,
-                  pageIndex: i - 1,
-                  text: it.str,
-                  x: it.x,
-                  y: it.y,
-                  width: it.width,
-                  height: it.height,
-                  fontSize: it.fontSize,
-                  fontFamily: it.fontName,
-                  isEdited: false,
+                rawItems.push({
+                  str: item.str,
+                  x: Math.max(0, vx),
+                  y: Math.max(0, topY),
+                  width: Math.max(8, width),
+                  height: Math.max(10, height),
+                  fontSize: Math.round(fontSize),
+                  fontName: family,
+                  isBold,
+                  isItalic,
                 });
               }
+
+              // Cluster adjacent items on the same baseline into cohesive readable lines
+              const clustered: DetectedTextItem[] = [];
+              const lineThreshold = 5;
+              rawItems.sort((a, b) =>
+                Math.abs(a.y - b.y) <= lineThreshold ? a.x - b.x : a.y - b.y
+              );
+
+              for (const it of rawItems) {
+                const last = clustered[clustered.length - 1];
+                if (
+                  last &&
+                  Math.abs(last.y - it.y) <= lineThreshold &&
+                  it.x >= last.x &&
+                  it.x - (last.x + last.width) <= it.fontSize * 1.8
+                ) {
+                  const gap = it.x - (last.x + last.width);
+                  const addSpace = gap > it.fontSize * 0.2 ? " " : "";
+                  last.text = last.text + addSpace + it.str;
+                  last.width = Math.max(last.width, it.x + it.width - last.x);
+                  last.height = Math.max(last.height, it.height);
+                  last.fontSize = Math.max(last.fontSize, it.fontSize);
+                  last.isBold = last.isBold || it.isBold;
+                  last.isItalic = last.isItalic || it.isItalic;
+                } else {
+                  clustered.push({
+                    id: `orig-${i - 1}-${clustered.length}-${Math.random().toString(36).substring(2, 6)}`,
+                    pageIndex: i - 1,
+                    text: it.str,
+                    x: it.x,
+                    y: it.y,
+                    width: it.width,
+                    height: it.height,
+                    fontSize: it.fontSize,
+                    fontFamily: it.fontName,
+                    isBold: it.isBold,
+                    isItalic: it.isItalic,
+                    isEdited: false,
+                  });
+                }
+              }
+
+              extractedTextMap[i - 1] = clustered;
+            } catch {
+              extractedTextMap[i - 1] = [];
             }
 
-            extractedTextMap[i - 1] = clustered;
-          } catch {
-            extractedTextMap[i - 1] = [];
-          }
 
           pageMetas.push({
             pageNumber: i,
@@ -505,10 +546,17 @@ export function InteractivePdfEditor({
       text: origItem.text,
       fontSize: origItem.fontSize || 14,
       fontFamily: origItem.fontFamily || "Helvetica",
-      color: origItem.color || activeColor || "#000000",
+      color: origItem.color || "#000000",
       backgroundColor: "transparent",
       textAlign: "left",
+      isBold: origItem.isBold,
+      isItalic: origItem.isItalic,
     };
+
+    // Sync active toolbar styling so subsequent edits and toolbar match original
+    setActiveFontSize(origItem.fontSize || 14);
+    setActiveFontFamily(origItem.fontFamily || "Helvetica");
+    if (origItem.color) setActiveColor(origItem.color);
 
     const updatedMap = {
       ...detectedTextMap,
@@ -565,6 +613,8 @@ export function InteractivePdfEditor({
         color: origItem.color || "#000000",
         backgroundColor: "transparent",
         textAlign: "left",
+        isBold: origItem.isBold,
+        isItalic: origItem.isItalic,
       });
     });
 
@@ -709,6 +759,8 @@ export function InteractivePdfEditor({
             color: item.color || "#000000",
             backgroundColor: "transparent",
             textAlign: "left",
+            isBold: item.isBold,
+            isItalic: item.isItalic,
           });
 
           item.isEdited = true;
@@ -1224,10 +1276,15 @@ export function InteractivePdfEditor({
       const fontHelvetica = await outPdf.embedFont(StandardFonts.Helvetica);
       const fontHelveticaBold = await outPdf.embedFont(StandardFonts.HelveticaBold);
       const fontHelveticaOblique = await outPdf.embedFont(StandardFonts.HelveticaOblique);
+      const fontHelveticaBoldOblique = await outPdf.embedFont(StandardFonts.HelveticaBoldOblique);
       const fontTimes = await outPdf.embedFont(StandardFonts.TimesRoman);
       const fontTimesBold = await outPdf.embedFont(StandardFonts.TimesRomanBold);
+      const fontTimesItalic = await outPdf.embedFont(StandardFonts.TimesRomanItalic);
+      const fontTimesBoldItalic = await outPdf.embedFont(StandardFonts.TimesRomanBoldItalic);
       const fontCourier = await outPdf.embedFont(StandardFonts.Courier);
       const fontCourierBold = await outPdf.embedFont(StandardFonts.CourierBold);
+      const fontCourierOblique = await outPdf.embedFont(StandardFonts.CourierOblique);
+      const fontCourierBoldOblique = await outPdf.embedFont(StandardFonts.CourierBoldOblique);
 
       for (let i = 0; i < pages.length; i++) {
         const pageMeta = pages[i];
@@ -1380,12 +1437,25 @@ export function InteractivePdfEditor({
           const b = (parseInt(cleanHex.substring(4, 6), 16) || 0) / 255;
 
           let font = fontHelvetica;
-          if (el.fontFamily === "TimesRoman" || el.fontFamily === "Times New Roman") {
-            font = el.isBold ? fontTimesBold : fontTimes;
-          } else if (el.fontFamily === "Courier") {
-            font = el.isBold ? fontCourierBold : fontCourier;
+          const fam = (el.fontFamily || "").toLowerCase();
+          const isB = !!el.isBold;
+          const isI = !!el.isItalic;
+
+          if (fam.includes("times") || fam.includes("serif")) {
+            if (isB && isI) font = fontTimesBoldItalic;
+            else if (isB) font = fontTimesBold;
+            else if (isI) font = fontTimesItalic;
+            else font = fontTimes;
+          } else if (fam.includes("courier") || fam.includes("mono")) {
+            if (isB && isI) font = fontCourierBoldOblique;
+            else if (isB) font = fontCourierBold;
+            else if (isI) font = fontCourierOblique;
+            else font = fontCourier;
           } else {
-            font = el.isBold ? fontHelveticaBold : el.isItalic ? fontHelveticaOblique : fontHelvetica;
+            if (isB && isI) font = fontHelveticaBoldOblique;
+            else if (isB) font = fontHelveticaBold;
+            else if (isI) font = fontHelveticaOblique;
+            else font = fontHelvetica;
           }
 
           const fontSize = el.fontSize || 14;
@@ -1747,6 +1817,7 @@ export function InteractivePdfEditor({
                 value={selectedElement.fontFamily || "Helvetica"}
                 onChange={(e) => {
                   const val = e.target.value;
+                  setActiveFontFamily(val);
                   setElements((prev) =>
                     prev.map((el) => (el.id === selectedElement.id ? { ...el, fontFamily: val } : el))
                   );
@@ -1767,6 +1838,7 @@ export function InteractivePdfEditor({
                   value={selectedElement.fontSize || 14}
                   onChange={(e) => {
                     const val = parseInt(e.target.value, 10) || 14;
+                    setActiveFontSize(val);
                     setElements((prev) =>
                       prev.map((el) => (el.id === selectedElement.id ? { ...el, fontSize: val } : el))
                     );
@@ -2257,16 +2329,22 @@ export function InteractivePdfEditor({
                         {el.type === "text" && (
                           <div
                             onDoubleClick={() => setEditingTextId(el.id)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedElementId(el.id);
+                            }}
                             style={{
                               fontSize: `${el.fontSize || 14}px`,
-                              fontFamily: el.fontFamily || "Helvetica",
+                              fontFamily: getCssFontFamily(el.fontFamily),
                               color: el.color || "#000000",
-                              fontWeight: el.isBold ? "bold" : "normal",
+                              fontWeight: el.isBold ? 700 : 400,
                               fontStyle: el.isItalic ? "italic" : "normal",
                               textAlign: el.textAlign || "left",
                               backgroundColor: el.backgroundColor || "transparent",
+                              lineHeight: 1.25,
+                              padding: "2px 4px",
                             }}
-                            className="w-full h-full p-0.5 whitespace-pre-wrap leading-tight overflow-hidden break-words"
+                            className="w-full h-full whitespace-pre-wrap leading-tight overflow-hidden break-words cursor-text"
                           >
                             {editingTextId === el.id ? (
                               <textarea
@@ -2275,22 +2353,48 @@ export function InteractivePdfEditor({
                                 onChange={(e) => {
                                   const val = e.target.value;
                                   setElements((prev) =>
-                                    prev.map((item) =>
-                                      item.id === el.id ? { ...item, text: val } : item
-                                    )
+                                    prev.map((item) => {
+                                      if (item.id !== el.id) return item;
+                                      const charWidthEst = (item.fontSize || 14) * 0.58;
+                                      const estimatedWidth = Math.max(item.width, val.length * charWidthEst + 24);
+                                      return { ...item, text: val, width: estimatedWidth };
+                                    })
                                   );
                                 }}
                                 onBlur={() => {
                                   setEditingTextId(null);
                                   pushHistory(elements, pages);
                                 }}
-                                className="w-full h-full resize-none bg-white/95 text-black border border-blue-500 rounded p-1 outline-none shadow-sm font-sans"
+                                onKeyDown={(e) => {
+                                  if (e.key === "Enter" && !e.shiftKey) {
+                                    e.preventDefault();
+                                    setEditingTextId(null);
+                                    pushHistory(elements, pages);
+                                  }
+                                }}
+                                style={{
+                                  fontSize: `${el.fontSize || 14}px`,
+                                  fontFamily: getCssFontFamily(el.fontFamily),
+                                  fontWeight: el.isBold ? 700 : 400,
+                                  fontStyle: el.isItalic ? "italic" : "normal",
+                                  color: el.color || "#000000",
+                                  textAlign: el.textAlign || "left",
+                                  lineHeight: 1.25,
+                                  backgroundColor:
+                                    el.backgroundColor && el.backgroundColor !== "transparent"
+                                      ? el.backgroundColor
+                                      : "rgba(255, 255, 255, 0.98)",
+                                  padding: "2px 4px",
+                                  margin: 0,
+                                }}
+                                className="w-full h-full resize-none border-2 border-blue-500 rounded outline-none shadow-md overflow-hidden"
                               />
                             ) : (
                               el.text || ""
                             )}
                           </div>
                         )}
+
 
                         {/* Image Attachment */}
                         {el.type === "image" && el.dataUrl && (

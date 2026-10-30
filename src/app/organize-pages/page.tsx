@@ -23,6 +23,7 @@ import { ToolPageShell } from "@/components/shared/ToolPageShell";
 import { FileDropzone } from "@/components/shared/FileDropzone";
 import { ProcessingOverlay } from "@/components/shared/ProcessingOverlay";
 import { ResultDownloadCard } from "@/components/shared/ResultDownloadCard";
+import { getPdfjs } from "@/lib/pdf/pdfjs-init";
 import { Button } from "@/components/ui/button";
 import { mergePdfFiles, rotatePdfPages } from "@/lib/pdf/pdf-utils";
 import { addRecentFile } from "@/lib/storage/db";
@@ -123,8 +124,7 @@ export default function OrganizePagesPage() {
     setIsRendering(true);
     try {
       const arrayBuffer = await pdfFile.arrayBuffer();
-      const pdfjsLib = await import("pdfjs-dist");
-      pdfjsLib.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjsLib.version}/pdf.worker.min.mjs`;
+      const pdfjsLib = await getPdfjs();
 
       const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
       const pageItems: PageItem[] = [];
