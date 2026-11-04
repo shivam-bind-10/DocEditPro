@@ -60,7 +60,7 @@ export default function RootLayout({
     <html
       lang="en"
       className="dark h-full antialiased"
-      style={{ colorScheme: "dark" }}
+      suppressHydrationWarning
     >
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -70,7 +70,10 @@ export default function RootLayout({
           rel="stylesheet"
         />
       </head>
-      <body className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)] font-sans antialiased">
+      <body
+        className="min-h-full flex flex-col bg-[var(--background)] text-[var(--foreground)] font-sans antialiased"
+        suppressHydrationWarning
+      >
         <a href="#main-content" className="skip-to-content">
           Skip to main content
         </a>

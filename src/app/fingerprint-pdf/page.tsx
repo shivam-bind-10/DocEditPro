@@ -56,13 +56,15 @@ async function fingerprintPdf(
 
 export default function FingerprintPdfPage() {
   const [file, setFile] = React.useState<File | null>(null);
-  const [copyId, setCopyId] = React.useState(() =>
-    Math.random().toString(36).substring(2, 10).toUpperCase()
-  );
+  const [copyId, setCopyId] = React.useState("DOC-SEC-01");
   const [recipientName, setRecipientName] = React.useState("");
   const [isProcessing, setIsProcessing] = React.useState(false);
   const [progress, setProgress] = React.useState(0);
   const [resultBytes, setResultBytes] = React.useState<Uint8Array | null>(null);
+
+  React.useEffect(() => {
+    setCopyId(Math.random().toString(36).substring(2, 10).toUpperCase());
+  }, []);
 
   const handleFileSelected = (files: File[]) => {
     if (files.length > 0) setFile(files[0]);

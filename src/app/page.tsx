@@ -2,10 +2,10 @@
 
 import * as React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Search,
   ArrowRight,
-  PenTool,
   Sparkles,
   Edit3,
   Shield,
@@ -14,40 +14,36 @@ import {
   Briefcase,
   LayoutGrid,
   List,
-  ChevronRight,
+  ChevronDown,
 } from "lucide-react";
 import { Header } from "@/components/layout/Header";
 import { Footer } from "@/components/layout/Footer";
 import { CATEGORIES, TOOLS } from "@/lib/tools-data";
 import { ToolCard } from "@/components/home/ToolCard";
+import { LiquidGlassCarousel } from "@/components/ui/liquid-glass-carousel";
 import RibbonGlow from "@/components/ui/ribbon-glow";
-
-const CATEGORY_ICONS: Record<string, React.ElementType> = {
-  essentials: Sparkles,
-  "edit-organize": Edit3,
-  "security-privacy": Shield,
-  "convert-export": ArrowLeftRight,
-  "scan-share": Camera,
-  business: Briefcase,
-};
-
-const QUICK_TOOL_IDS = [
-  "merge-pdf",
-  "compress-pdf",
-  "split-pdf",
-  "edit-pdf-text",
-  "word-to-pdf",
-  "pdf-to-word",
-  "ocr-pdf",
-];
+import {
+  getOptionCarouselItems,
+  OptionCarouselItem,
+} from "@/lib/option-card-textures";
 
 const QUICK_SEARCH_CHIPS = ["Merge", "Compress", "Word", "OCR", "Encrypt", "Sign"];
 
 export default function HomePage() {
+  const router = useRouter();
+  const [activeCarouselIndex, setActiveCarouselIndex] = React.useState<number>(0);
   const [selectedCategory, setSelectedCategory] = React.useState<string>("all");
   const [searchQuery, setSearchQuery] = React.useState<string>("");
+  const [showCatalog, setShowCatalog] = React.useState<boolean>(true);
   const [viewMode, setViewMode] = React.useState<"grid" | "compact">("compact");
   const searchInputRef = React.useRef<HTMLInputElement>(null);
+
+  // Generate option card textures for all 44 tools in the Liquid Glass Carousel
+  const optionItems: OptionCarouselItem[] = React.useMemo(() => {
+    return getOptionCarouselItems();
+  }, []);
+
+  const activeOption = optionItems[activeCarouselIndex] || optionItems[0];
 
   // Keyboard shortcut '/' to focus search
   React.useEffect(() => {
@@ -59,12 +55,6 @@ export default function HomePage() {
     };
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-  const quickTools = React.useMemo(() => {
-    return QUICK_TOOL_IDS.map((id) => TOOLS.find((t) => t.id === id)).filter(
-      Boolean
-    ) as typeof TOOLS;
   }, []);
 
   const filteredTools = React.useMemo(() => {
@@ -79,18 +69,26 @@ export default function HomePage() {
     });
   }, [selectedCategory, searchQuery]);
 
+  // Direct option click navigation: takes the user straight to that option's functioning
+  const handleSelectOption = React.useCallback(
+    (item: { href?: string; slug?: string }) => {
+      const targetUrl = item.href || (item.slug ? `/${item.slug}` : "/");
+      router.push(targetUrl);
+    },
+    [router],
+  );
+
   return (
     <div className="flex min-h-screen flex-col bg-[var(--background)] text-[var(--foreground)] font-sans antialiased selection:bg-white selection:text-black">
       <Header />
 
-      <main className="flex-1 space-y-16 pb-24">
+      <main className="flex-1 space-y-12 pb-24">
         {/* =========================================================================
-            1. HERO — RibbonGlow WebGL2 background
+            1. HERO & LIQUID GLASS 3D OPTIONS CAROUSEL (WITH AMBIENT RIBBON GLOW)
             ========================================================================= */}
-        <section className="relative w-full overflow-hidden" style={{ minHeight: "640px" }}>
-          {/* RibbonGlow fills the hero — trackPointer runs at window level so
-              content overlaid above it still receives cursor events correctly */}
-          <div className="absolute inset-0 opacity-75">
+        <section className="relative w-full overflow-hidden pt-10 sm:pt-14 pb-14 sm:pb-16">
+          {/* RibbonGlow Ambient Interactive WebGL2 Fluid Background */}
+          <div className="absolute inset-0 opacity-75 pointer-events-none">
             <RibbonGlow
               background="#000000"
               color1="#e8864a"
@@ -102,414 +100,237 @@ export default function HomePage() {
               reach={280}
               style={{ minWidth: 0, minHeight: 0, position: "absolute", inset: 0 }}
             />
-            {/* Subtle center-radial dimming vignette to ensure text readability */}
+            {/* Center-radial dimming vignette to ensure text readability */}
             <div
               className="absolute inset-0 pointer-events-none"
               style={{
                 background:
-                  "radial-gradient(ellipse 65% 55% at 50% 45%, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.1) 70%, transparent 100%)",
+                  "radial-gradient(ellipse 65% 55% at 50% 35%, rgba(0, 0, 0, 0.45) 0%, rgba(0, 0, 0, 0.1) 70%, transparent 100%)",
               }}
             />
             {/* Bottom gradient — ribbon fades into site background */}
             <div
-              className="absolute inset-x-0 bottom-0 h-64 pointer-events-none"
-              style={{ background: "linear-gradient(to bottom, transparent, #000000)" }}
+              className="absolute inset-x-0 bottom-0 h-48 pointer-events-none"
+              style={{ background: "linear-gradient(to bottom, transparent, var(--background, #09090c))" }}
             />
             {/* Top gradient — blends behind header */}
             <div
               className="absolute inset-x-0 top-0 h-28 pointer-events-none"
-              style={{ background: "linear-gradient(to top, transparent, #000000)" }}
+              style={{ background: "linear-gradient(to top, transparent, var(--background, #09090c))" }}
             />
           </div>
 
-          {/* Hero content */}
-          <div className="relative z-10 mx-auto max-w-[1200px] px-6 lg:px-8 pt-24 pb-36 sm:pt-28 text-center">
-            <div className="max-w-[760px] mx-auto space-y-6">
-              {/* Pill Badge */}
-              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.04] border border-white/10 text-xs font-mono text-zinc-300 backdrop-blur-md">
-                <span className="h-1.5 w-1.5 rounded-full bg-white/70" />
-                <span>Runs entirely in browser</span>
+          <div className="relative z-10 mx-auto max-w-[1300px] px-4 sm:px-6 lg:px-8 text-center space-y-8 sm:space-y-10">
+            {/* Display Headline */}
+            <div className="max-w-[780px] mx-auto space-y-4">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/[0.05] border border-white/10 text-xs font-mono text-zinc-300 backdrop-blur-md">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
+                <span>100% Client-Side Engine</span>
                 <span className="text-white/25">·</span>
-                <span className="text-white font-medium">Zero server uploads</span>
+                <span className="text-white font-medium">Zero Server Uploads</span>
               </div>
 
-              {/* Display Headline */}
-              <h1 className="text-4xl sm:text-5xl md:text-6xl font-semibold tracking-tight text-white leading-[1.1]">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl font-semibold tracking-tight text-white leading-[1.15]">
                 Every PDF tool you need. <br />
                 <span className="bg-gradient-to-b from-white via-zinc-200 to-zinc-400 bg-clip-text text-transparent font-normal">
                   Private, fast and entirely in your browser.
                 </span>
               </h1>
 
-              {/* Subtitle */}
-              <p className="text-[15px] sm:text-base text-zinc-300/80 leading-relaxed max-w-[65ch] mx-auto font-normal">
-                DocEditPro provides 44 document utilities running locally via WebAssembly. Edit, merge, compress, convert and sign with zero file transfers.
+              <p className="text-xs sm:text-sm text-zinc-400 leading-relaxed max-w-[62ch] mx-auto">
+                Scroll your mouse wheel to cycle through options, then click the active option to launch it directly.
               </p>
+            </div>
 
-              {/* CTA Buttons */}
-              <div className="flex flex-wrap items-center justify-center gap-3 pt-2">
-                <Link
-                  href="/pdf-editor"
-                  className="h-11 px-6 rounded-[8px] bg-white hover:bg-zinc-200 text-black text-sm font-semibold inline-flex items-center gap-2 transition-colors shadow-sm"
-                >
-                  <PenTool className="h-4 w-4 text-black" />
-                  <span>Launch PDF Editor</span>
-                  <ArrowRight className="h-4 w-4 text-black" />
-                </Link>
-                <a
-                  href="#all-tools"
-                  className="h-11 px-5 rounded-[8px] bg-white/[0.05] hover:bg-white/[0.1] border border-white/10 hover:border-white/20 text-white text-sm font-medium inline-flex items-center gap-2 transition-all backdrop-blur-md"
-                >
-                  <span>Browse 44 Tools</span>
-                </a>
+            {/* THE LIQUID GLASS OPTIONS CAROUSEL (WHITE BACKGROUND) */}
+            <div className="mt-6 sm:mt-10 relative w-full rounded-2xl overflow-hidden border border-zinc-200/90 dark:border-white/10 shadow-[0_24px_80px_rgba(0,0,0,0.45)] bg-white">
+              <div className="h-[490px] sm:h-[530px] md:h-[580px] w-full">
+                <LiquidGlassCarousel
+                  items={optionItems}
+                  panelHeight={420}
+                  gap={18}
+                  background="#ffffff"
+                  entry={false}
+                  onActiveChange={(index) => setActiveCarouselIndex(index)}
+                  onSelectOption={(item) => handleSelectOption(item)}
+                />
+              </div>
+
+              {/* Active Option Bar under the Liquid Glass Stage */}
+              <div className="relative z-30 px-5 py-4 bg-zinc-50 border-t border-zinc-200/90 flex flex-col sm:flex-row items-center justify-between gap-3 text-left">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-700 bg-emerald-100/70 px-2 py-0.5 rounded border border-emerald-200 font-medium">
+                      {activeOption.category.replace("-", " ")}
+                    </span>
+                    <span className="text-xs font-mono text-zinc-500">
+                      Option {activeCarouselIndex + 1} of {optionItems.length}
+                    </span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-bold text-zinc-900 tracking-tight mt-1">
+                    {activeOption.title}
+                  </h3>
+                  <p className="text-xs text-zinc-600 truncate max-w-xl hidden sm:block">
+                    {activeOption.description}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 shrink-0 self-end sm:self-auto">
+                  <span className="hidden md:inline-flex items-center gap-1.5 text-[11px] font-mono text-zinc-500">
+                    <span className="px-1.5 py-0.5 rounded bg-zinc-200/80 border border-zinc-300 text-zinc-700 font-medium">
+                      Mouse Wheel ↕
+                    </span>
+                    <span>Scroll to choose · Click to launch</span>
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => handleSelectOption(activeOption)}
+                    className="h-9 px-5 rounded-full bg-zinc-900 hover:bg-black text-white font-semibold text-xs inline-flex items-center gap-2 transition-all shadow-md active:scale-95 cursor-pointer"
+                  >
+                    <span>Launch {activeOption.title}</span>
+                    <ArrowRight className="h-3.5 w-3.5 text-white" />
+                  </button>
+                </div>
               </div>
             </div>
           </div>
         </section>
 
-
         {/* =========================================================================
-            3. ALL 44 TOOLS CATALOG & SEARCH (ORGANIZED UX)
+            2. SECONDARY / NON-DISTRACTING DIRECTORY
+            (Old sprawl is tucked away neatly so the carousel remains the primary choice)
             ========================================================================= */}
-        <section id="all-tools" className="mx-auto max-w-[1200px] px-6 lg:px-8 space-y-10 pt-4">
-          
-          {/* A. QUICK-ACCESS ESSENTIALS (Hidden when searching to avoid distraction) */}
-          {!searchQuery && (
-            <div className="space-y-3.5">
-              <div className="flex items-center justify-between pb-1">
-                <div className="flex items-center gap-2">
-                  <span className="flex h-2 w-2 rounded-full bg-white/70" />
-                  <h3 className="text-xs font-mono uppercase tracking-wider text-zinc-400 font-medium">
-                    Daily Essentials · Top Workflows
-                  </h3>
-                </div>
-                <span className="text-xs font-mono text-zinc-500 hidden sm:inline-block">
-                  Fast client-side access
-                </span>
-              </div>
-
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-7 gap-2.5">
-                {quickTools.map((tool) => (
-                  <ToolCard key={tool.id} tool={tool} variant="quick" />
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* B. COMMAND & FILTER BAR */}
-          <div className="space-y-4 pt-2 border-t border-[var(--border)]">
-            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <section id="all-tools" className="mx-auto max-w-[1200px] px-6 lg:px-8">
+          <div className="rounded-2xl border border-white/[0.08] bg-[#121216]/60 p-5 sm:p-6 backdrop-blur-md space-y-5">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h2 className="text-xl sm:text-2xl font-semibold tracking-tight text-[var(--foreground)]">
-                  All Document Utilities
-                </h2>
-                <p className="text-[13px] text-[var(--muted-foreground)] mt-0.5">
-                  Explore 44 browser-native tools by workflow category or search instantly.
+                <h3 className="text-sm sm:text-base font-semibold text-white flex items-center gap-2">
+                  <span>Complete Tool Directory</span>
+                  <span className="text-[11px] font-mono text-zinc-400 bg-white/[0.06] px-2 py-0.5 rounded-full border border-white/10">
+                    {TOOLS.length} Tools
+                  </span>
+                </h3>
+                <p className="text-xs text-zinc-400 mt-0.5">
+                  Browse, search, and access all {TOOLS.length} client-side document utilities below.
                 </p>
               </div>
 
-              {/* Search & View Mode Switcher */}
-              <div className="flex items-center gap-2.5">
-                {/* Search Input */}
-                <div className="relative w-full md:w-72">
-                  <div className="flex items-center gap-2 px-3 py-1.5 rounded-[8px] bg-[var(--surface)] border border-[var(--border)] focus-within:border-white/50 transition-colors">
-                    <Search className="h-4 w-4 text-[var(--subtle-foreground)] shrink-0" />
-                    <input
-                      ref={searchInputRef}
-                      type="text"
-                      placeholder="Search tools... (Press /)"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="w-full bg-transparent text-xs text-[var(--foreground)] placeholder-[var(--subtle-foreground)] outline-none font-mono"
-                    />
-                    {searchQuery ? (
+              <button
+                onClick={() => setShowCatalog((prev) => !prev)}
+                className="self-start sm:self-auto h-9 px-4 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white text-xs font-medium inline-flex items-center gap-2 transition-all cursor-pointer"
+              >
+                <span>{showCatalog ? "Collapse Index" : `Show All ${TOOLS.length} Tools`}</span>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-200 ${
+                    showCatalog ? "rotate-180" : ""
+                  }`}
+                />
+              </button>
+            </div>
+
+            {/* Collapsed content: only shown when explicitly toggled or when searching */}
+            {(showCatalog || searchQuery) && (
+              <div className="pt-5 border-t border-white/[0.08] space-y-6 animate-in fade-in duration-300">
+                {/* Search chips & view switcher */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex flex-wrap items-center gap-1.5 text-xs text-zinc-400 font-mono">
+                    <span className="text-zinc-500 mr-1 text-[11px]">Quick search:</span>
+                    {QUICK_SEARCH_CHIPS.map((chip) => (
+                      <button
+                        key={chip}
+                        onClick={() => setSearchQuery(chip)}
+                        className={`px-2 py-0.5 rounded-full text-[11px] border transition-colors cursor-pointer ${
+                          searchQuery.toLowerCase() === chip.toLowerCase()
+                            ? "bg-white text-black border-white font-medium"
+                            : "bg-white/[0.03] hover:bg-white/[0.08] border-white/10 text-zinc-300"
+                        }`}
+                      >
+                        {chip}
+                      </button>
+                    ))}
+                    {searchQuery && (
                       <button
                         onClick={() => setSearchQuery("")}
-                        className="text-xs text-[var(--subtle-foreground)] hover:text-[var(--foreground)] px-1 cursor-pointer"
+                        className="text-[11px] text-zinc-400 hover:text-white underline ml-2 cursor-pointer"
                       >
-                        ✕
+                        Clear search
                       </button>
-                    ) : (
-                      <kbd className="hidden sm:inline-block px-1.5 py-0.5 text-[10px] font-mono text-zinc-500 bg-white/[0.04] border border-white/10 rounded">
-                        /
-                      </kbd>
                     )}
+                  </div>
+
+                  <div className="flex items-center p-1 rounded-lg bg-white/[0.04] border border-white/10 shrink-0 self-end sm:self-auto">
+                    <button
+                      onClick={() => setViewMode("grid")}
+                      title="Grid View"
+                      className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                        viewMode === "grid"
+                          ? "bg-white text-black shadow-xs"
+                          : "text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      <LayoutGrid className="h-3.5 w-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode("compact")}
+                      title="Compact List View"
+                      className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                        viewMode === "compact"
+                          ? "bg-white text-black shadow-xs"
+                          : "text-zinc-400 hover:text-white"
+                      }`}
+                    >
+                      <List className="h-3.5 w-3.5" />
+                    </button>
                   </div>
                 </div>
 
-                {/* View Mode Toggle (Grid vs Compact) */}
-                <div className="flex items-center p-1 rounded-[8px] bg-[var(--surface)] border border-[var(--border)] shrink-0">
-                  <button
-                    onClick={() => setViewMode("grid")}
-                    title="Grid View"
-                    className={`p-1.5 rounded-[6px] transition-colors cursor-pointer ${
+                {/* Filtered Tools Grid/List */}
+                {filteredTools.length > 0 ? (
+                  <div
+                    className={
                       viewMode === "grid"
-                        ? "bg-white text-black shadow-xs"
-                        : "text-[var(--muted-foreground)] hover:text-white"
-                    }`}
+                        ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-3.5"
+                        : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5"
+                    }
                   >
-                    <LayoutGrid className="h-3.5 w-3.5" />
-                  </button>
-                  <button
-                    onClick={() => setViewMode("compact")}
-                    title="Compact List View"
-                    className={`p-1.5 rounded-[6px] transition-colors cursor-pointer ${
-                      viewMode === "compact"
-                        ? "bg-white text-black shadow-xs"
-                        : "text-[var(--muted-foreground)] hover:text-white"
-                    }`}
-                  >
-                    <List className="h-3.5 w-3.5" />
-                  </button>
-                </div>
+                    {filteredTools.map((tool) => (
+                      <ToolCard key={tool.id} tool={tool} variant={viewMode} />
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-xs text-zinc-400">
+                    No tools found in catalog matching &ldquo;{searchQuery}&rdquo;.
+                  </div>
+                )}
               </div>
-            </div>
-
-            {/* Quick search chips */}
-            <div className="flex flex-wrap items-center gap-1.5 text-xs text-zinc-400 font-mono">
-              <span className="text-zinc-500 mr-1 text-[11px]">Quick search:</span>
-              {QUICK_SEARCH_CHIPS.map((chip) => (
-                <button
-                  key={chip}
-                  onClick={() => setSearchQuery(chip)}
-                  className={`px-2 py-0.5 rounded-full text-[11px] border transition-colors cursor-pointer ${
-                    searchQuery.toLowerCase() === chip.toLowerCase()
-                      ? "bg-white text-black border-white font-medium"
-                      : "bg-white/[0.03] hover:bg-white/[0.08] border-white/10 text-zinc-300"
-                  }`}
-                >
-                  {chip}
-                </button>
-              ))}
-              {searchQuery && (
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="text-[11px] text-zinc-400 hover:text-white underline ml-2 cursor-pointer"
-                >
-                  Clear search
-                </button>
-              )}
-            </div>
-
-            {/* Segmented Filter Control */}
-            <div className="flex flex-wrap items-center gap-1.5 pt-1">
-              <button
-                onClick={() => setSelectedCategory("all")}
-                className={`h-8 px-2.5 sm:px-3 rounded-[6px] text-xs font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                  selectedCategory === "all"
-                    ? "bg-white text-black font-semibold shadow-xs"
-                    : "bg-[#141416] text-zinc-300 hover:text-white hover:bg-[#1c1c20] border border-white/10 hover:border-white/20"
-                }`}
-              >
-                <span>All</span>
-                <span className="text-[11px] font-mono opacity-65">({TOOLS.length})</span>
-              </button>
-
-              {CATEGORIES.map((cat) => {
-                const count = TOOLS.filter((t) => t.category === cat.id).length;
-                const isSelected = selectedCategory === cat.id;
-                const CatIcon = CATEGORY_ICONS[cat.id] || Sparkles;
-                return (
-                  <button
-                    key={cat.id}
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`h-8 px-2.5 sm:px-3 rounded-[6px] text-xs font-medium transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
-                      isSelected
-                        ? "bg-white text-black font-semibold shadow-xs"
-                        : "bg-[#141416] text-zinc-300 hover:text-white hover:bg-[#1c1c20] border border-white/10 hover:border-white/20"
-                    }`}
-                  >
-                    <CatIcon className="h-3.5 w-3.5 shrink-0" />
-                    <span>{cat.name}</span>
-                    <span className="text-[11px] font-mono opacity-65">({count})</span>
-                  </button>
-                );
-              })}
-            </div>
+            )}
           </div>
-
-          {/* C. SEARCH RESULTS (Active when searching) */}
-          {searchQuery && (
-            <div className="space-y-4">
-              <div className="flex items-center justify-between text-xs text-zinc-400 font-mono pb-2 border-b border-[var(--border)]">
-                <span>
-                  Found <strong className="text-white">{filteredTools.length}</strong> {filteredTools.length === 1 ? "tool" : "tools"} matching &ldquo;{searchQuery}&rdquo;
-                </span>
-                <button
-                  onClick={() => setSearchQuery("")}
-                  className="hover:text-white underline cursor-pointer"
-                >
-                  Reset search
-                </button>
-              </div>
-
-              {filteredTools.length > 0 ? (
-                <div
-                  className={
-                    viewMode === "grid"
-                      ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
-                      : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5"
-                  }
-                >
-                  {filteredTools.map((tool) => (
-                    <ToolCard key={tool.id} tool={tool} variant={viewMode} />
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-16 space-y-3 rounded-[10px] bg-[var(--surface)] border border-[var(--border)] p-8">
-                  <Search className="h-6 w-6 text-[var(--subtle-foreground)] mx-auto" />
-                  <h3 className="text-base font-semibold text-[var(--foreground)]">
-                    No tools matching &ldquo;{searchQuery}&rdquo;
-                  </h3>
-                  <p className="text-xs text-[var(--muted-foreground)]">
-                    Try keywords like &ldquo;merge&rdquo;, &ldquo;compress&rdquo;, &ldquo;ocr&rdquo;, or &ldquo;sign&rdquo;.
-                  </p>
-                  <button
-                    onClick={() => {
-                      setSearchQuery("");
-                      setSelectedCategory("all");
-                    }}
-                    className="px-4 py-1.5 rounded-[6px] bg-white text-black text-xs font-semibold cursor-pointer hover:bg-zinc-200 transition-colors"
-                  >
-                    Reset Filters
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* D. SINGLE CATEGORY VIEW (Active when a specific category is chosen, no search) */}
-          {!searchQuery && selectedCategory !== "all" && (
-            <div className="space-y-6">
-              {(() => {
-                const currentCat = CATEGORIES.find((c) => c.id === selectedCategory);
-                if (!currentCat) return null;
-                const CatIcon = CATEGORY_ICONS[currentCat.id] || Sparkles;
-                const catTools = TOOLS.filter((t) => t.category === currentCat.id);
-
-                return (
-                  <>
-                    <div className="p-4 sm:p-5 rounded-[10px] bg-white/[0.03] border border-white/10 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                      <div className="flex items-center gap-3.5">
-                        <div className="h-10 w-10 rounded-[8px] bg-white/[0.08] flex items-center justify-center text-white border border-white/10 shrink-0">
-                          <CatIcon className="h-5 w-5" />
-                        </div>
-                        <div>
-                          <h3 className="text-base font-semibold text-white flex items-center gap-2">
-                            <span>{currentCat.name}</span>
-                            <span className="text-xs font-mono text-zinc-400 bg-white/[0.06] px-2 py-0.5 rounded-full border border-white/5">
-                              {catTools.length} tools
-                            </span>
-                          </h3>
-                          <p className="text-xs text-zinc-400 mt-0.5">{currentCat.description}</p>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => setSelectedCategory("all")}
-                        className="text-xs font-mono text-zinc-300 hover:text-white px-3.5 py-1.5 rounded-[6px] bg-white/[0.05] hover:bg-white/10 border border-white/10 transition-colors self-start sm:self-auto cursor-pointer"
-                      >
-                        ← View All Categories
-                      </button>
-                    </div>
-
-                    <div
-                      className={
-                        viewMode === "grid"
-                          ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
-                          : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5"
-                      }
-                    >
-                      {catTools.map((tool) => (
-                        <ToolCard key={tool.id} tool={tool} variant={viewMode} />
-                      ))}
-                    </div>
-                  </>
-                );
-              })()}
-            </div>
-          )}
-
-          {/* E. STRUCTURED CATEGORIZED DIRECTORY (When in "all" view, no search) */}
-          {!searchQuery && selectedCategory === "all" && (
-            <div className="space-y-12">
-              {CATEGORIES.map((cat) => {
-                const catTools = TOOLS.filter((t) => t.category === cat.id);
-                const CatIcon = CATEGORY_ICONS[cat.id] || Sparkles;
-
-                return (
-                  <section key={cat.id} className="space-y-4">
-                    {/* Category Section Header */}
-                    <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-7 w-7 items-center justify-center rounded-[6px] bg-white/[0.06] text-white border border-white/10 shrink-0">
-                          <CatIcon className="h-3.5 w-3.5" />
-                        </div>
-                        <div>
-                          <h3 className="text-sm sm:text-base font-semibold text-white tracking-tight flex items-center gap-2">
-                            <span>{cat.name}</span>
-                            <span className="text-[11px] font-mono font-normal text-zinc-400 bg-white/[0.05] px-2 py-0.5 rounded-full border border-white/5">
-                              {catTools.length}
-                            </span>
-                          </h3>
-                        </div>
-                        <span className="text-xs text-zinc-400 hidden md:inline-block ml-2 border-l border-white/10 pl-3">
-                          {cat.description}
-                        </span>
-                      </div>
-
-                      <button
-                        onClick={() => setSelectedCategory(cat.id)}
-                        className="text-xs font-mono text-zinc-400 hover:text-white transition-colors flex items-center gap-1 cursor-pointer shrink-0"
-                      >
-                        <span>Focus</span>
-                        <ChevronRight className="h-3.5 w-3.5" />
-                      </button>
-                    </div>
-
-                    {/* Tools in Category */}
-                    <div
-                      className={
-                        viewMode === "grid"
-                          ? "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-4 gap-4"
-                          : "grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-2.5"
-                      }
-                    >
-                      {catTools.map((tool) => (
-                        <ToolCard key={tool.id} tool={tool} variant={viewMode} />
-                      ))}
-                    </div>
-                  </section>
-                );
-              })}
-            </div>
-          )}
-
         </section>
 
-
         {/* =========================================================================
-            5. DOCUMENTATION / GUIDES CALLOUT
+            3. DOCUMENTATION / GUIDES CALLOUT
             ========================================================================= */}
         <section className="mx-auto max-w-[1200px] px-6 lg:px-8">
-          <div className="rounded-[12px] border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="rounded-2xl border border-white/[0.08] bg-[#121216]/60 p-6 sm:p-8 flex flex-col md:flex-row items-center justify-between gap-6 backdrop-blur-md">
             <div className="space-y-1.5 text-center md:text-left">
-              <span className="text-[11px] font-mono text-[var(--muted-foreground)] uppercase tracking-wider">
+              <span className="text-[11px] font-mono text-zinc-400 uppercase tracking-wider">
                 Documentation
               </span>
-              <h3 className="text-lg font-semibold text-[var(--foreground)]">
+              <h3 className="text-lg font-semibold text-white">
                 Master Local Document Workflows
               </h3>
-              <p className="text-[13px] text-[var(--muted-foreground)] max-w-xl">
+              <p className="text-[13px] text-zinc-400 max-w-xl">
                 Read step-by-step guides on Bates numbering, offline OCR extraction, P2P encrypted file sharing, and direct PDF editing.
               </p>
             </div>
 
             <Link
               href="/guides"
-              className="h-10 px-5 rounded-[8px] bg-white/[0.05] hover:bg-white/[0.1] border border-[var(--border)] hover:border-[var(--border-hover)] text-white text-xs font-medium inline-flex items-center gap-2 transition-colors whitespace-nowrap"
+              className="h-10 px-5 rounded-lg bg-white/[0.06] hover:bg-white/[0.12] border border-white/10 text-white text-xs font-medium inline-flex items-center gap-2 transition-colors whitespace-nowrap"
             >
               <span>View All Guides</span>
-              <ArrowRight className="h-3.5 w-3.5 text-[var(--muted-foreground)]" />
+              <ArrowRight className="h-3.5 w-3.5 text-zinc-400" />
             </Link>
           </div>
         </section>

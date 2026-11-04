@@ -319,18 +319,18 @@ export default function RibbonGlow(props: RibbonGlowProps) {
     const canvasRef = useRef<HTMLCanvasElement>(null)
 
     const vRef = useRef({ background, color1, color2, speed: 1, size: 1, angle: 0, hover: 1, reach: 240 })
-    vRef.current = {
-        background,
-        color1,
-        color2,
-
-        speed: clampN(num(speed, 50), 0, 100) / 50,
-        size: clampN(num(size, 100), 50, 200) / 100,
-
-        angle: (clampN(num(angle, 0), -180, 180) * Math.PI) / 180,
-        hover: clampN(num(hover, 100), 0, 200) / 100,
-        reach: clampN(num(reach, 240), 10, 800),
-    }
+    useEffect(() => {
+        vRef.current = {
+            background,
+            color1,
+            color2,
+            speed: clampN(num(speed, 50), 0, 100) / 50,
+            size: clampN(num(size, 100), 50, 200) / 100,
+            angle: (clampN(num(angle, 0), -180, 180) * Math.PI) / 180,
+            hover: clampN(num(hover, 100), 0, 200) / 100,
+            reach: clampN(num(reach, 240), 10, 800),
+        }
+    }, [background, color1, color2, speed, size, angle, hover, reach])
 
     useEffect(() => {
         const canvas = canvasRef.current

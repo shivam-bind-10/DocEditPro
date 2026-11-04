@@ -60,13 +60,17 @@ export default function ComparePdfsPage() {
   const scrollARef = React.useRef<HTMLDivElement>(null);
   const scrollBRef = React.useRef<HTMLDivElement>(null);
 
-  const syncScroll = (source: "a" | "b") => (e: React.UIEvent<HTMLDivElement>) => {
-    const el = e.currentTarget;
-    const target = source === "a" ? scrollBRef.current : scrollARef.current;
-    if (target) {
-      target.scrollTop = el.scrollTop;
+  const handleScrollA = React.useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (scrollBRef.current) {
+      scrollBRef.current.scrollTop = e.currentTarget.scrollTop;
     }
-  };
+  }, []);
+
+  const handleScrollB = React.useCallback((e: React.UIEvent<HTMLDivElement>) => {
+    if (scrollARef.current) {
+      scrollARef.current.scrollTop = e.currentTarget.scrollTop;
+    }
+  }, []);
 
   const handleCompare = async () => {
     if (!fileA || !fileB) return;
@@ -234,7 +238,7 @@ export default function ComparePdfsPage() {
                   </div>
                   <div
                     ref={scrollARef}
-                    onScroll={syncScroll("a")}
+                    onScroll={handleScrollA}
                     className="h-[480px] overflow-y-auto p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap"
                   >
                     <span className="text-[var(--muted-foreground)]">{textA}</span>
@@ -246,7 +250,7 @@ export default function ComparePdfsPage() {
                   </div>
                   <div
                     ref={scrollBRef}
-                    onScroll={syncScroll("b")}
+                    onScroll={handleScrollB}
                     className="h-[480px] overflow-y-auto p-3 font-mono text-xs leading-relaxed whitespace-pre-wrap"
                   >
                     <span className="text-[var(--muted-foreground)]">{textB}</span>
